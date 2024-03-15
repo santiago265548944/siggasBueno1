@@ -3,6 +3,10 @@ import { jqxDataTableComponent } from 'jqwidgets-scripts/jqwidgets-ts/angular_jq
 import { DataSharingService } from '../../service/data-sharing.service';
 import { Subscription } from 'rxjs';
 import { MemoryService } from '../../cache/memory.service';
+import { RequestHelper } from '../../api/request/request-helper';
+import { StoreProcedures } from '../../api/request/store-procedures.enum';
+import { ApiService } from '../../api/api.service';
+import { InputParameter } from '../../api/request/input-parameter';
 
 @Component({
    selector: 'app-adicionar-element',
@@ -10,138 +14,209 @@ import { MemoryService } from '../../cache/memory.service';
    styleUrls: ['./adicionar-element.component.css']
 })
 export class AdicionarElementComponent implements OnInit {
-   @ViewChild('myDataTable') myDataTable: jqxDataTableComponent;
-   orderSelected: string; // Variable para almacenar el número de orden seleccionado
-   searchTerm: string; // Variable para almacenar el número de orden ingresado manualmente
-   numeroDeOrdenes: string[]; // Arreglo para almacenar los números de orden
-   identifyResults: any = [];
-   subscription: Subscription;
+   informacionCargadaEnTabla: boolean = false;
+   selectedFeatures: any[] = [];
+   resultOrders: Array<any>;
+   orderSelected: any;
+   user: any;
+   perfil: any;
+   checkLegalized = 0;
 
-   dataTableColumns: Array<any>;
-   dataAdapter: any;
-
-   elementosGuardados: any[] = [];
+   selectedValue: any;
 
    constructor(
       private dataSharingService: DataSharingService,
+      private apiService: ApiService,
       private memoryService: MemoryService
-   ) {
-      this.subscription = this.dataSharingService.getData().subscribe((data) => {
-         console.log('Datos compartidos recibidos:', data);
-         this.identifyResults = data;
-         this.prepareDataTableColumns();
+   ) {}
+   ngOnInit() {
+      // Suscribirse al observable del servicio DataSharingService
+      this.dataSharingService.getSelectedFeaturesObservable().subscribe((features) => {
+         console.log('Datos seleccionados actualizados en otro componente:', features);
+
+         // Verificar si hay características seleccionadas
+         if (features.length > 0) {
+            // Acceder a los atributos específicos (TAG, DEPARTAMENTO, LOCALIDAD) del primer feature
+            const firstFeature = features[0];
+            const tag = firstFeature.attributes.TAG;
+            const departamento = firstFeature.attributes.DEPARTAMENTO;
+            const localidad = firstFeature.attributes.LOCALIDAD;
+
+            // Hacer algo con estos valores, si es necesario
+            console.log('TAG:', tag);
+            console.log('DEPARTAMENTO:', departamento);
+            console.log('LOCALIDAD:', localidad);
+
+            // Guardar los features para su uso posterior si es necesario
+            this.selectedFeatures = features;
+
+            // Activar los formularios
+            this.informacionCargadaEnTabla = true;
+
+            // Cargar datos en los selects
+            this.setUser();
+         } else {
+            // Si no hay características seleccionadas, desactivar los formularios
+            this.informacionCargadaEnTabla = false;
+            this.selectedValue = null; // Limpiar el valor seleccionado
+         }
+      });
+      this.dataSharingService.getSelectedSelectValue().subscribe((value) => {
+         // Recibir el valor de un elemento
+         if (value.toString() === '46') {
+            this.selectedValue = 'TuberiaP80';
+         } else {
+            this.selectedValue = value;
+         }
+         console.log('este es el value ', this.selectedValue);
       });
    }
 
-   ngOnInit(): void {
-      this.prepareDataTableColumns();
+   private setUser() {
+      this.user = this.memoryService.getItem('currentUser');
+      console.log(this.user);
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerPerfilUsuario, [
+               new InputParameter('un_id', this.user)
+            ])
+         )
+         .subscribe((json) => {
+            this.perfil = JSON.parse(json['1']);
+            // console.log(this.perfil);
+            this.elementosAgregar();
+         });
    }
 
-   loadTableData() {
-      const tablaDatos = this.memoryService.getTablaDatos();
-      this.prepareDataTableSource(tablaDatos);
-   }
-
-   filterOptions() {
-      if (this.searchTerm) {
-         // Si se ingresa un valor en el input, filtra el arreglo de números de orden
-         this.numeroDeOrdenes = this.numeroDeOrdenes.filter((orden) =>
-            orden.includes(this.searchTerm)
-         );
-      } else {
-         // Si el input está vacío, restaura el arreglo completo
-         this.loadOrdenesFromLocalStorage();
-      }
-   }
-
-   // Método para cargar los números de orden desde localStorage
-   loadOrdenesFromLocalStorage() {
-      const ordenesRealizadas = JSON.parse(localStorage.getItem('ordenesRealizadas'));
-
-      if (ordenesRealizadas) {
-         // Extraer los números de orden de los datos almacenados
-         this.numeroDeOrdenes = ordenesRealizadas.map((orden) => orden.numeroOrden);
-      } else {
-         // Si no hay datos en el localStorage, inicializa el arreglo vacío
-         this.numeroDeOrdenes = [];
-      }
-   }
-   GuardarElemento() {
-      if (!this.orderSelected) {
-         alert('Por favor, selecciona un número de orden.');
+   //obtiene elementos para agregar
+   private elementosAgregar() {
+      if (!this.selectedValue) {
+         // Si el elemento no tiene valor, desactivar el formulario o mostrar un mensaje
+         this.informacionCargadaEnTabla = false;
          return;
       }
 
-      // Obtener el número de orden seleccionado
-      const numeroOrden = this.orderSelected;
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(
+               StoreProcedures.ObtenerElementosParaAgregar,
+               [
+                  new InputParameter('un_elemento', this.selectedValue),
+                  new InputParameter('un_usuario', this.user),
+                  new InputParameter('un_equipo', 'equipo_prueba'),
+                  new InputParameter(
+                     'un_departamento',
+                     this.selectedFeatures[0].attributes.DEPARTAMENTO
+                  ),
+                  new InputParameter(
+                     'una_localidad',
+                     this.selectedFeatures[0].attributes.LOCALIDAD
+                  ),
+                  new InputParameter('un_codigoerror', 0),
+                  new InputParameter('un_msgerror', ''),
+                  new InputParameter('un_Resultado', null)
+               ]
+            )
+         )
+         .subscribe((json) => {
+            console.log('Respuesta del procedimiento almacenado:', json);
+            if (json['0'] && json['0'].ErrorMessage) {
+               alert('Error: ' + json['0'].ErrorMessage);
+               this.informacionCargadaEnTabla = false; // Desactivar el formulario
+               return; // Salir de la función si hay un error
+            }
 
-      // Cargar los datos de la tabla correspondientes a este número de orden
-      const ordenesRealizadas = JSON.parse(localStorage.getItem('ordenesRealizadas'));
-      const ordenSeleccionada = ordenesRealizadas.find(
-         (orden) => orden.numeroOrden === numeroOrden
-      );
+            const un_codigoerror = json['5']; // Obtener el código de error
+            if (un_codigoerror !== 0) {
+               const un_msgerror = json['6']; // Obtener el mensaje de error
+               alert('Error: ' + un_msgerror);
+               this.informacionCargadaEnTabla = false; // Desactivar el formulario
+            } else {
+               const un_departamento = json['3']; // Obtener el departamento
+               const una_localidad = json['4']; // Obtener la localidad
+               console.log('Departamento:', un_departamento);
+               console.log('Localidad:', una_localidad);
 
-      if (ordenSeleccionada && ordenSeleccionada.tablaDatos) {
-         // Si se encontraron datos de la tabla, guardarlos en el almacenamiento local
-         localStorage.setItem('numeroOrdenSeleccionado', numeroOrden);
-         localStorage.setItem('tablaDatos', JSON.stringify(ordenSeleccionada.tablaDatos));
-         alert('Número de orden y datos de la tabla guardados satisfactoriamente.');
-      } else {
-         // Si no se encontraron datos de la tabla, mostrar un mensaje de error
-         alert('No se encontraron datos de la tabla para el número de orden seleccionado.');
+               // Aquí puedes realizar alguna acción con los parámetros de salida si es necesario
+               if (!un_departamento && !una_localidad) {
+                  alert('No se encontraron elementos para agregar.');
+                  this.informacionCargadaEnTabla = false; // Desactivar el formulario
+               } else {
+                  this.informacionCargadaEnTabla = true; // Activar el formulario
+                  this.loadResultadoOrdenesCompleted(json['7']); // Cargar los resultados en la tabla
+               }
+            }
+            this.getOrders();
+         });
+   }
+
+   // Obtiene las ordenesAsignadasporlocalidad
+   private getOrders() {
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(
+               StoreProcedures.OrdenesAsignadasPorLocalidad,
+               []
+            )
+         )
+         .subscribe((json) => {
+            console.log('Respuesta del procedimiento almacenado:', json);
+            if (json[3] != null) {
+               const response = JSON.parse(json[3]);
+               if (response['Table1'].length === 0) {
+                  this.loadResultadoOrdenesCompleted(response['Table1']);
+               }
+            }
+         });
+   }
+
+   loadResultadoOrdenesCompleted(json: any) {
+      if (json['Table1'] != null) {
+         this.resultOrders = json['Table1'];
       }
-
-      // Limpia el campo de búsqueda
-      this.searchTerm = '';
-      this.orderSelected = '';
    }
    agregarElementos() {
-      if (!this.orderSelected) {
-         alert('Por favor, selecciona un número de orden.');
+      if (!this.selectedValue || !this.orderSelected) {
+         alert('Debe seleccionar un número de orden.');
          return;
       }
 
-      // Obtener el número de orden seleccionado
-      const numeroOrden = this.orderSelected;
+      console.log('selectedValue:', this.selectedValue);
+      const un_departamento = this.selectedFeatures[0].attributes.DEPARTAMENTO;
+      const una_localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
+      const tag = this.selectedFeatures[0].attributes.TAG;
+      const un_tipoelemento = this.selectedValue;
+      const un_una_orden = this.orderSelected.ORDEN;
 
-      // Cargar los datos de la tabla correspondientes a este número de orden
-      const ordenesRealizadas = JSON.parse(localStorage.getItem('ordenesRealizadas'));
-      const ordenSeleccionada = ordenesRealizadas.find(
-         (orden) => orden.numeroOrden === numeroOrden
-      );
+      console.log('Valor de un_elemento:', un_departamento);
+      console.log('Valor de un_elemento:', una_localidad);
+      console.log('Valor de un_elemento:', tag);
+      console.log('Valor de un_tipoelemento:', un_tipoelemento);
+      console.log('Valor de un_una_Orden', un_una_orden);
 
-      if (ordenSeleccionada && ordenSeleccionada.tablaDatos) {
-         // Si se encontraron datos de la tabla, cargarlos
-         this.prepareDataTableSource(ordenSeleccionada.tablaDatos);
-      } else {
-         // Si no se encontraron datos de la tabla, mostrar un mensaje de error
-         alert('No se encontraron datos de la tabla para el número de orden seleccionado.');
-      }
-   }
-
-   prepareDataTableColumns(): void {
-      this.dataTableColumns = [
-         { text: 'Capa', dataField: 'layerName', width: 200 },
-         { text: 'Valor', dataField: 'value', width: 200 }
-      ];
-   }
-
-   // Prepara los datos para la tabla basados en los objetos feature
-   prepareDataTableSource(features: any[]): void {
-      const localData = [];
-      for (const feature of features) {
-         localData.push({ layerName: feature.layerName, value: feature.value });
-      }
-
-      const source = {
-         datatype: 'array',
-         dataFields: [
-            { name: 'layerName', type: 'string' },
-            { name: 'value', type: 'string' }
-         ],
-         localdata: localData
-      };
-
-      this.dataAdapter = new jqx.dataAdapter(source);
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.AgregarElementosOrden, [
+               new InputParameter('un_departamento', un_departamento),
+               new InputParameter('una_localidad', una_localidad),
+               new InputParameter('un_una_orden', un_una_orden),
+               new InputParameter('un_tipoelemento', un_tipoelemento),
+               new InputParameter('tag', tag),
+               new InputParameter('un_codigoerror', 0), // Parámetro de salida para código de error
+               new InputParameter('un_msgerror', '') // Parámetro de salida para mensaje de error
+            ])
+         )
+         .subscribe((json) => {
+            // Manejar la respuesta del procedimiento almacenado, si es necesario
+            const codigoError = json['6']; // Obtener el código de error
+            const msgError = json['7']; // Obtener el mensaje de error
+            if (codigoError !== 0) {
+               // Mostrar mensaje de error si lo deseas
+               alert('Error: ' + msgError);
+            } else {
+               // Mostrar mensaje de éxito si lo deseas
+               alert('Elementos agregados correctamente!');
+            }
+         });
    }
 }

@@ -10,7 +10,6 @@ import { EmapActions } from '../map-service/emap-actions.enum';
 import { Subscription } from 'rxjs';
 import * as _ from 'underscore';
 import { FlashToGeometry } from '../map-service/map-action';
-import { DataSharingService } from '../service/data-sharing.service';
 
 @Component({
    selector: 'app-identify',
@@ -32,7 +31,7 @@ export class IdentifyComponent implements OnInit {
    identifyTasks = new Array<any>();
    identifyResults: Array<any>;
 
-   constructor(private mapService: MapService, private dataSharingService: DataSharingService) {
+   constructor(private mapService: MapService) {
       this.layerOptionsData = new Array<any>();
 
       this.subscription = this.mapService
@@ -140,8 +139,6 @@ export class IdentifyComponent implements OnInit {
             this.resultQuantity += object[other].length;
             return object;
          });
-         // Enviar los resultados al servicio compartido antes de restablecer a null
-         this.dataSharingService.sendData(this.identifyResults);
          this.identifyResults = null;
          this.stopProgress();
       }

@@ -1237,6 +1237,7 @@ export class RibbonComponent implements OnInit, AfterViewInit {
       }
       this.modalGenerarCorrectivo.instance.start();
    }
+
    // Adicionar Elemento
    openAdicionarElemento(): void {
       if (this.modalAdicionarElemento == null) {

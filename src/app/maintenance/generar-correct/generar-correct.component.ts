@@ -1,12 +1,23 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import {
+   ChangeDetectorRef,
+   EventEmitter,
+   Component,
+   NgZone,
+   OnInit,
+   Output,
+   ViewChild
+} from '@angular/core';
+import { Subscription } from 'rxjs';
+import { jqxLoaderComponent } from 'jqwidgets-scripts/jqwidgets-ts/angular_jqxloader';
+import { jqxDataTableComponent } from 'jqwidgets-scripts/jqwidgets-ts/angular_jqxdatatable';
 import { RequestHelper } from '../../api/request/request-helper';
 import { StoreProcedures } from '../../api/request/store-procedures.enum';
 import { ApiService } from '../../api/api.service';
 import { MemoryService } from '../../cache/memory.service';
-import { jqxLoaderComponent } from 'jqwidgets-scripts/jqwidgets-ts/angular_jqxloader';
-import { Subscription } from 'rxjs';
 import { DataSharingService } from '../../service/data-sharing.service';
-import { jqxDataTableComponent } from 'jqwidgets-scripts/jqwidgets-ts/angular_jqxdatatable';
+import { IdentidaPredioService } from '../../service/IdentidaPredio.service';
+import { jqxTabsComponent } from 'jqwidgets-scripts/jqwidgets-ts/angular_jqxtabs';
+import { InputParameter } from '../../api/request/input-parameter';
 
 @Component({
    selector: 'app-generar-correct',
@@ -14,8 +25,10 @@ import { jqxDataTableComponent } from 'jqwidgets-scripts/jqwidgets-ts/angular_jq
    styleUrls: ['./generar-correct.component.css']
 })
 export class GenerarCorrectComponent implements OnInit {
-   @ViewChild('myDataTable') myDataTable: jqxDataTableComponent;
    @ViewChild('jqxLoader') jqxLoader: jqxLoaderComponent;
+   @ViewChild('tabsElement') jqxTabs: jqxTabsComponent;
+   @Output() closed = new EventEmitter<void>();
+
    selectedTipoActividad: any;
    selectedActividad: any;
    selectedActividadOSF: any;
@@ -37,37 +50,120 @@ export class GenerarCorrectComponent implements OnInit {
    sharedData: any[] = [];
    lastOrderId: number = 0;
 
-   // Configuración de la tabla
-   dataTableColumns: Array<any>;
-   dataAdapter: any;
-   dataTableSource: any;
-   tablaDatos: { layerName: string; value: string }[] = [];
+   asociarDireccion: boolean = false;
+
+   informacionCargadaEnTabla: boolean = false;
+   // identidadPredio
+   input1Value: string;
+   input2Value: string;
+   capturedInformation: any[] = [];
+   selectedFeatures: any[] = [];
+
+   selectedValue: any;
 
    constructor(
       private apiService: ApiService,
       private memoryService: MemoryService,
-      private dataSharingService: DataSharingService
-   ) {
-      this.subscription = this.dataSharingService.getData().subscribe((data) => {
-         this.identifyResults = data;
-         // Aquí puedes realizar cualquier procesamiento necesario con los datos compartidos
-         this.identifyResults = data;
-         this.prepareDataTableColumns();
-         this.prepareDataTableSource(this.identifyResults); // Configura la tabla con los datos compartidos
+      private dataSharingService: DataSharingService,
+      private identidaPredioService: IdentidaPredioService
+   ) {}
+
+   ngOnInit() {
+      // Suscribirse al observable del servicio DataSharingService
+      this.dataSharingService.getSelectedFeaturesObservable().subscribe((features) => {
+         console.log('Datos seleccionados actualizados en otro componente:', features);
+
+         // Verificar si hay características seleccionadas
+         if (features.length > 0) {
+            // Acceder a los atributos específicos (TAG, DEPARTAMENTO, LOCALIDAD) del primer feature
+            const firstFeature = features[0];
+            const tag = firstFeature.attributes.TAG;
+            const departamento = firstFeature.attributes.DEPARTAMENTO;
+            const localidad = firstFeature.attributes.LOCALIDAD;
+
+            // Hacer algo con estos valores, si es necesario
+            console.log('TAG:', tag);
+            console.log('DEPARTAMENTO:', departamento);
+            console.log('LOCALIDAD:', localidad);
+
+            // Guardar los features para su uso posterior si es necesario
+            this.selectedFeatures = features;
+
+            // Activar los formularios
+            this.informacionCargadaEnTabla = true;
+
+            // Cargar datos en los selects
+            this.loadDropDownTipoActivity();
+            this.loadDropDownActivity();
+         } else {
+            // Si no hay características seleccionadas, desactivar los formularios
+            this.informacionCargadaEnTabla = false;
+         }
+      });
+      this.dataSharingService.getSelectedSelectValue().subscribe((value) => {
+         // Recibir y asignar el valor del select
+         if (value.toString() === '46') {
+            this.selectedValue = 'TuberiaP80';
+         } else {
+            this.selectedValue = value;
+         }
+         console.log('este es el value ', this.selectedValue);
+      });
+
+      // Suscribirse al observable del servicio IdentidaPredioService
+      this.identidaPredioService.identifyResults$.subscribe((results) => {
+         this.capturedInformation = results;
+
+         // Puedes realizar cualquier acción adicional con la información capturada aquí
+         this.procesarInformacionCapturada();
       });
    }
 
-   ngOnInit(): void {
-      this.loadDropDownActivity();
-      this.loadDropDownTipoActivity();
-      this.prepareDataTableColumns();
-      this.prepareDataTableSource(this.identifyResults);
+   // Puedes definir métodos adicionales según sea necesario
+   private procesarInformacionCapturada() {
+      // Realiza acciones adicionales con la información capturada
+      console.log('Información capturada:', this.capturedInformation);
+
+      // Ejemplo: Acceder a la etiqueta del primer elemento del array
+      if (this.capturedInformation && this.capturedInformation.length > 0) {
+         const etiquetaValue = this.capturedInformation[0].feature.attributes.OBJECTID;
+         const etiquetaDIRECCION = this.capturedInformation[0].feature.attributes.DIRECCION;
+
+         console.log('Valor de ETIQUETA:', etiquetaValue, etiquetaDIRECCION);
+      }
+   }
+   private actualizarInformacionCuadro(selectedFeatures: any[]): void {
+      // Actualizar la información en el cuadro con los features seleccionados
+      this.selectedFeatures = selectedFeatures;
+   }
+
+   ngOnDestroy(): void {
+      if (this.subscription) {
+         this.subscription.unsubscribe();
+      }
+   }
+   limpiarInformacion(): void {
+      this.selectedActividad = null;
+      this.selectedTipoActividad = null;
+      this.observacion = '';
+      this.observable = '';
+      this.selectedFeatures = [];
+      this.capturedInformation = [];
+   }
+
+   private checkIdentificationStatus(): void {
+      if (this.identifyResults) {
+         // Puedes agregar lógica aquí si es necesario
+      } else {
+         this.selectedActividad = null;
+         this.selectedTipoActividad = null;
+      }
    }
 
    private loadDropDownTipoActivity(): void {
       this.apiService
          .callStoreProcedureV2(
-            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerActividades, [])
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerTiposdeActividad, [])
          )
          .subscribe((json) => {
             if (json[0] != null) {
@@ -81,10 +177,14 @@ export class GenerarCorrectComponent implements OnInit {
          this.tipoactivity = json['Table1'];
       }
    }
+
    private loadDropDownActivity(): void {
       this.apiService
          .callStoreProcedureV2(
-            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerActividades, [])
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerActividades, [
+               new InputParameter('un_tipo', this.selectedTipoActividad),
+               new InputParameter('un_usario', this.user)
+            ])
          )
          .subscribe((json) => {
             if (json[0] != null) {
@@ -112,128 +212,188 @@ export class GenerarCorrectComponent implements OnInit {
    }
 
    Agregar() {
-      // Verifica si observable no está vacío antes de agregarlo a observacion
-      if (this.observable.trim() !== '') {
-         // Agrega el contenido de observable a observacion
+      if (!this.validarFormulario()) {
+         return;
+      }
+      if (this.selectedActividad) {
          if (this.observacion !== null) {
-            this.observacion += '\n'; // Agrega un salto de línea si observacion ya tiene contenido
+            this.observacion += '\n';
          } else {
-            this.observacion = ''; // Inicializa observacion si es nulo
+            this.observacion = '';
          }
-         this.observacion += this.observable;
-         // Limpia el campo de observable después de agregarlo
-         this.observable = '';
+         this.observacion += this.selectedActividad.DESCRIPCION;
       }
    }
 
    Remover() {
       this.observacion = '';
+      this.observable = '';
+      this.selectedFeatures = [];
+      this.capturedInformation = [];
    }
 
    Cancelar() {
       const confirmacion = confirm('¿Estás seguro de que deseas cancelar?');
 
       if (confirmacion) {
-         // Si el usuario confirma, realiza las acciones de cancelación
          this.selectedActividad = '';
          this.selectedTipoActividad = '';
       }
    }
 
+   // generarOrden() {
+   //    if (typeof localStorage === 'undefined') {
+   //       alert('El almacenamiento local no está disponible en este navegador.');
+   //       return;
+   //    }
+
+   //    const actividadSeleccionada = this.selectedActividad
+   //       ? this.selectedActividad.DESCRIPCION
+   //       : '';
+   //    const observable = String(this.observable);
+
+   //    if (!actividadSeleccionada || !observable) {
+   //       alert('Debes completar los campos.');
+   //       return;
+   //    }
+
+   //    const ordenGenerada = this.generarNumeroOrden().toString();
+
+   //    this.lastOrderId++;
+   //    const currentDate = new Date();
+   //    const dateString = currentDate.toLocaleDateString();
+
+   //    const firstFeature = this.selectedFeatures[0];
+   //    const tag = firstFeature ? firstFeature.attributes.TAG : '';
+   //    const departamento = firstFeature ? firstFeature.attributes.DEPARTAMENTO : '';
+   //    const localidad = firstFeature ? firstFeature.attributes.LOCALIDAD : '';
+
+   //    if (tag && departamento && localidad) {
+   //       this.memoryService.setItem('tag', tag);
+   //       this.memoryService.setItem('departamento', departamento);
+   //       this.memoryService.setItem('localidad', localidad);
+   //    }
+
+   //    this.memoryService.setItem('actividadSeleccionada', actividadSeleccionada);
+   //    this.memoryService.setItem('observacion', observable);
+   //    this.memoryService.setItem('numeroOrden', ordenGenerada);
+   //    this.memoryService.setItem('estadoOrden', 'Registrada');
+
+   //    let ordenesRealizadas = JSON.parse(localStorage.getItem('ordenesRealizadas')) || [];
+
+   //    ordenesRealizadas.push({
+   //       id: this.lastOrderId,
+   //       numeroOrden: ordenGenerada,
+   //       actividad: actividadSeleccionada,
+   //       observacion: observable,
+   //       fecha: dateString,
+   //       estadoOrden: 'Registrada',
+   //       tag: tag,
+   //       departamento: departamento,
+   //       localidad: localidad
+   //    });
+
+   //    localStorage.setItem('ordenesRealizadas', JSON.stringify(ordenesRealizadas));
+
+   //    alert(`Orden generada: ${ordenGenerada}`);
+
+   //    this.selectedActividad = null;
+   //    this.selectedTipoActividad = null;
+   //    this.observacion = '';
+   //    this.observable = '';
+   //    this.selectedFeatures = [];
+   //    this.capturedInformation = [];
+
+   //    this.closed.emit();
+   // }
+
+   // generarNumeroOrden() {
+   //    const numeroOrden = Math.floor(100000 + Math.random() * 900000);
+   //    return numeroOrden;
+   // }
+   private validarFormulario(): boolean {
+      if (!this.observable || this.observable.trim() === '') {
+         alert('El campo de OBSERVACIÓN es obligatorio.');
+         return false;
+      }
+      return true;
+   }
    generarOrden() {
-      // Verificar si el localStorage está disponible en este navegador
-      if (typeof localStorage === 'undefined') {
-         alert('El almacenamiento local no está disponible en este navegador.');
+      // Verificar si hay elementos seleccionados
+      if (
+         !this.selectedActividad ||
+         !this.selectedTipoActividad ||
+         !this.selectedFeatures ||
+         !this.selectedValue
+      ) {
+         alert('Por favor seleccione todos los elementos necesarios para generar la orden.');
          return;
       }
+      const una_actividad_gis = this.selectedActividad.CODIGO;
+      const una_actividad = this.selectedTipoActividad.CODIGO;
+      const una_observacion = this.observable;
+      const un_elemento = this.selectedValue.toString();
+      const tags = this.selectedFeatures[0].attributes.TAG;
+      const un_departamento = this.selectedFeatures[0].attributes.DEPARTAMENTO;
+      const una_localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
 
-      // Captura la actividad seleccionada
-      const actividadSeleccionada = this.selectedActividad.DESCRIPCION;
+      console.log('una_actividad_gis:', una_actividad_gis);
+      console.log('una_actividad:', una_actividad);
+      console.log('tags:', tags);
+      console.log('un_elemento:', un_elemento);
+      console.log('una_observacion:', una_observacion);
+      console.log('un_departamento:', un_departamento);
+      console.log('una_localidad:', una_localidad);
 
-      // Captura el contenido del área de texto (observación)
-      const observacion = String(this.observacion);
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.GenerarOrdenCorrectivo, [
+               new InputParameter('una_actividad_gis', una_actividad_gis),
+               new InputParameter('una_actividad', una_actividad),
+               new InputParameter('tags', tags.toString()),
+               new InputParameter('un_elemento', un_elemento),
+               new InputParameter('una_observacion', una_observacion),
+               new InputParameter('un_departamento', un_departamento),
+               new InputParameter('una_localidad', una_localidad),
+               new InputParameter('ionuorderid', { type: 'out', value: null }),
+               new InputParameter('onuerrorcode', { type: 'out', value: null }),
+               new InputParameter('osberrormessage', { type: 'out', value: null })
+            ])
+         )
+         .subscribe((response) => {
+            console.log('respuesta del procedimiento', response);
+            if (response && response.length > 0) {
+               const result = response[0];
+               const errorCode = result['onuerrorcode'];
+               const errorMessage = result['osberrormessage'];
 
-      // Verifica si los campos están vacíos
-      if (!actividadSeleccionada || !observacion) {
-         alert('Debes completar los campos.');
-         return; // Detiene la ejecución si los campos están vacíos
-      }
+               if (errorCode === 0) {
+                  const ordenId = result['ionuorderid'];
+                  if (ordenId) {
+                     alert(`Orden generada exitosamente. Número de orden: ${ordenId}`);
+                  } else {
+                     alert('La orden no pudo ser generada correctamente.');
+                  }
 
-      // Genera una orden con 6 números al azar y la convierte a una cadena
-      const ordenGenerada = this.generarNumeroOrden().toString();
+                  // Resto de la lógica para limpiar el formulario y emitir el evento de cerrar
+                  this.selectedActividad = null;
+                  this.selectedTipoActividad = null;
+                  this.observacion = '';
+                  this.observable = '';
+                  this.selectedFeatures = [];
+                  this.capturedInformation = [];
 
-      this.lastOrderId++;
-      // Crea un objeto Date para la fecha actual
-      const currentDate = new Date();
-
-      // Convierte la fecha actual a una cadena (puedes personalizar el formato)
-      const dateString = currentDate.toLocaleDateString(); // Ejemplo de formato: "MM/DD/AAAA"
-
-      // Almacena la actividad, la observación, la orden y el estado "realizada" en localStorage
-      this.memoryService.setItem('actividadSeleccionada', actividadSeleccionada);
-      this.memoryService.setItem('observacion', observacion);
-      this.memoryService.setItem('numeroOrden', ordenGenerada);
-      this.memoryService.setItem('estadoOrden', 'Registrada'); // Cambiado a 'Registrada'
-
-      // Almacena los datos de la tabla en el servicio MemoryService
-      this.memoryService.setItem('tablaDatos', JSON.stringify(this.tablaDatos));
-
-      // Crea un arreglo para llevar un registro de órdenes realizadas (si aún no existe)
-      let ordenesRealizadas = JSON.parse(localStorage.getItem('ordenesRealizadas')) || [];
-
-      // Agrega la orden actual al arreglo de órdenes realizadas con el estado "realizada"
-      ordenesRealizadas.push({
-         id: this.lastOrderId,
-         numeroOrden: ordenGenerada,
-         actividad: actividadSeleccionada,
-         observacion: observacion,
-         fecha: dateString,
-         estadoOrden: 'Registrada',
-         tablaDatos: this.tablaDatos
-      });
-
-      // Almacena el arreglo actualizado en localStorage
-      localStorage.setItem('ordenesRealizadas', JSON.stringify(ordenesRealizadas));
-
-      // Muestra la orden generada
-      alert(`Orden generada: ${ordenGenerada}`);
-
-      // Limpia los campos después de guardar la orden
-      this.selectedActividad = null;
-      this.observacion = '';
-      this.tablaDatos = null;
-      this.selectedTipoActividad = '';
+                  this.closed.emit();
+               } else {
+                  alert(`Error generando la orden: ${errorMessage}`);
+               }
+            } else {
+               alert('Error en la respuesta del servidor');
+            }
+         });
    }
 
-   generarNumeroOrden() {
-      // Genera una orden con 6 números al azar
-      const numeroOrden = Math.floor(100000 + Math.random() * 900000);
-      return numeroOrden;
-   }
-
-   prepareDataTableColumns(): void {
-      this.dataTableColumns = [
-         { text: 'Capa', dataField: 'layerName', width: 200 },
-         { text: 'Valor', dataField: 'value', width: 200 }
-      ];
-   }
-
-   // Prepara los datos para la tabla basados en los objetos feature
-   prepareDataTableSource(features: any[]): void {
-      const localData = [];
-      for (const feature of features) {
-         localData.push({ layerName: feature.layerName, value: feature.value });
-      }
-      this.tablaDatos = localData;
-      const source = {
-         datatype: 'array',
-         dataFields: [
-            { name: 'layerName', type: 'string' },
-            { name: 'value', type: 'string' }
-         ],
-         localdata: localData
-      };
-
-      this.dataAdapter = new jqx.dataAdapter(source);
-   }
+   // onSelectChange(event: any): void {
+   //    this.dataSharingService.setSelectChangeFunction(event);
+   // }
 }

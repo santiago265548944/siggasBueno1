@@ -130,6 +130,8 @@ import { GenerarCorrectComponent } from './maintenance/generar-correct/generar-c
 import { AdicionarElementComponent } from './maintenance/adicionar-element/adicionar-element.component';
 import { ConsultarOrdenesComponent } from './maintenance/consultar-ordenes/consultar-ordenes.component';
 import { DataSharingService } from './service/data-sharing.service';
+import { IdentidaPredioService } from './service/IdentidaPredio.service';
+import { CommonModule } from '@angular/common';
 
 @NgModule({
    declarations: [
@@ -333,7 +335,7 @@ import { DataSharingService } from './service/data-sharing.service';
       ConsultarOrdenesComponent,
       ExecuteOrderComponent
    ],
-   imports: [BrowserModule, ModalModule, FormsModule, HttpModule, routing],
+   imports: [BrowserModule, ModalModule, FormsModule, CommonModule, HttpModule, routing],
    providers: [
       MapService,
       DrawService,
@@ -343,7 +345,8 @@ import { DataSharingService } from './service/data-sharing.service';
       GenericTasksService,
       AuthGuard,
       DataSharingService,
-      PermissionService
+      PermissionService,
+      IdentidaPredioService
    ],
    bootstrap: [AppComponent]
 })

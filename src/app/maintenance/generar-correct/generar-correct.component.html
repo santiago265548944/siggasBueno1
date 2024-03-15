@@ -2,9 +2,14 @@
    <div class="row-1">
       <div class="row-1-col1">
          <label for="tipoActividad" class="row1-label">Tipo Actividad:</label>
-         <select id="tipoActividad" class="row1-select" [(ngModel)]="selectedTipoActividad">
+         <select
+            id="tipoActividad"
+            class="row1-select"
+            [(ngModel)]="selectedTipoActividad"
+            [disabled]="!informacionCargadaEnTabla"
+         >
             <option *ngFor="let activities of tipoactivity" [ngValue]="activities">
-               {{ activities.DESCRIPCION }}
+               {{ activities.CODIGO }} -{{ activities.DESCRIPCION }} - {{ activities.PORCENTAJE }}
             </option>
          </select>
       </div>
@@ -17,9 +22,14 @@
    <div class="row-2">
       <div class="row-2-col1">
          <label for="actividad" class="row2-label">Actividad:</label>
-         <select id="actividad" class="row2-select" [(ngModel)]="selectedActividad">
+         <select
+            id="actividad"
+            class="row2-select"
+            [(ngModel)]="selectedActividad"
+            [disabled]="!informacionCargadaEnTabla"
+         >
             <option *ngFor="let activities of activity" [ngValue]="activities">
-               {{ activities.DESCRIPCION }}
+               {{ activities.CODIGO }} -{{ activities.DESCRIPCION }} -{{ activities.TIPOTRABAJO }}
             </option>
          </select>
       </div>
@@ -32,7 +42,12 @@
    <div class="row-3">
       <div class="row-3-col1">
          <label for="actividadOSF" class="row3-label">Actividad OSF:</label>
-         <select id="actividadOSF" class="row3-select" [(ngModel)]="selectedActividad">
+         <select
+            id="actividadOSF"
+            class="row3-select"
+            [(ngModel)]="selectedActividad"
+            [disabled]="!informacionCargadaEnTabla"
+         >
             <option [ngValue]="selectedActividad">
                {{ selectedActividad?.DESCRIPCION }}
             </option>
@@ -43,13 +58,13 @@
    <div class="row-4">
       <div class="row-4-col1">
          <label for="order_number" class="row4-label">Observación:</label>
-         <input type="text" class="inputObserva" [(ngModel)]="observable" />
+         <textarea class="inputObserva" [(ngModel)]="observable" required> </textarea>
       </div>
    </div>
 
    <div class="row-5">
       <div class="row-5-col1">
-         <textarea name="" class="row5-input" [(ngModel)]="observacion"></textarea>
+         <textarea name="" class="row5-input" [(ngModel)]="observacion" disabled></textarea>
       </div>
 
       <div class="row-5-col2">
@@ -63,27 +78,49 @@
       </div>
    </div>
 
-   <div class="row-7">
-      <div class="row-7-col1">
-         <input type="checkbox" />
-         <label class="row7-label">Asociar a Dirección</label>
-         <input type="text" class="input1" disabled />
-         <input type="text" class="input2" disabled />
-         <button class="buttonPredio" disabled>Seleccionar predio</button>
-      </div>
+   <!-- ... (código HTML anterior) ... -->
+
+   <div class="row-7-col1">
+      <input type="checkbox" [(ngModel)]="asociarDireccion" />
+      <label class="row7-label">Asociar a Dirección</label>
+
+      <input
+         type="text"
+         class="input1"
+         [disabled]="!asociarDireccion"
+         [(ngModel)]="capturedInformation[0]?.feature.attributes.OBJECTID"
+         readonly
+      />
+
+      <input
+         type="text"
+         class="input2"
+         [disabled]="!asociarDireccion"
+         [(ngModel)]="capturedInformation[0]?.feature.attributes.DIRECCION"
+         readonly
+      />
    </div>
+
+   <!-- ... (otras partes del HTML) ... -->
 </div>
 <br />
 <div class="cuadro2">
    <div class="row-2">
       <div class="tabla">
-         <jqxDataTable
-            #myDataTable
-            [source]="dataAdapter"
-            [columns]="dataTableColumns"
-            [pageable]="false"
-            [columnsResize]="true"
-         ></jqxDataTable>
+         <div class="fila">
+            <div class="celda"></div>
+            <div class="celda">Elemento</div>
+            <div class="celda">Tag</div>
+            <div class="celda">Departamento</div>
+            <div class="celda">Localidad</div>
+         </div>
+         <div class="fila" *ngFor="let feature of selectedFeatures">
+            <div class="celda"></div>
+            <div class="celda">{{ selectedValue }}</div>
+            <div class="celda">{{ feature ? feature.attributes.TAG : '' }}</div>
+            <div class="celda">{{ feature ? feature.attributes.DEPARTAMENTO : '' }}</div>
+            <div class="celda">{{ feature ? feature.attributes.LOCALIDAD : '' }}</div>
+         </div>
       </div>
    </div>
 </div>

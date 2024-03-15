@@ -1,6 +1,12 @@
 .cuadro0 {
    border: 1px solid black;
 }
+.button-container {
+   position: absolute;
+   right: 19%;
+   top: 13%;
+}
+
 .cuadro_radios {
    padding: 5px;
    box-sizing: border-box;

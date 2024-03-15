@@ -4,7 +4,10 @@ import { MemoryService } from '../../cache/memory.service';
 import { jqxLoaderComponent } from 'jqwidgets-scripts/jqwidgets-ts/angular_jqxloader';
 import { ModalService } from '../../modal.module';
 import { Subscription } from 'rxjs';
-import { DataSharingService } from '../../service/data-sharing.service';
+import { StoreProcedures } from '../../api/request/store-procedures.enum';
+import { RequestHelper } from '../../api/request/request-helper';
+import { InputParameter } from '../../api/request/input-parameter';
+import * as moment from 'moment';
 
 @Component({
    selector: 'app-consultar-ordenes',
@@ -14,26 +17,65 @@ import { DataSharingService } from '../../service/data-sharing.service';
 export class ConsultarOrdenesComponent implements OnInit {
    @ViewChild('jqxLoader') jqxLoader: jqxLoaderComponent;
    showModal: boolean = false;
-   ordenesRealizadas: any[] = [];
-   id: number;
-   selectedOrder: string;
-   selectedOrderDetails: any;
-   fechaGeneracion: string;
-   estadoOrden: string;
-   activity: string;
+   buscarOrden: boolean = false;
+   buscarTag: boolean = false;
+   numeroOrden: string = '';
+   resultOrders: Array<any>;
+   perfil: any;
+   user: any;
+   checkLegalized = 0;
+   orderSelected: any;
+   txtEstadoOrden: string;
+   resultOrdersTag: any;
+   resultCorrItems: any;
+   dataPreItems: any;
+   tipoOrdenCP: string;
+   listaHistorialCambios: any[];
+   sTasktype: any;
+
+   // variable para almacenar los datos de la consulta
+   fechagen: Date;
+   fechaprog: Date;
+   codactppal: string;
+   actppal: string;
+   codcuadrilla: string;
+   cuadrilla: string;
+   codactgis: string;
+   actgis: string;
+   estado: string;
+   listap: string;
    observacion: string;
-   tableData: any[] = [];
-   dataTableColumns: Array<any> = [
-      { text: 'Capa', dataField: 'layerName', width: 200 },
-      { text: 'Valor', dataField: 'value', width: 200 }
-   ];
-   identifyResults: any = [];
-   subscription: Subscription;
-   dataAdapter: any;
+   estadolegal: string;
+   tipomantenimiento: string;
+   tipotrabajo1: string;
+   tipotrabajo2: string;
+   ordenpadre: string;
+   tipoelemento: string;
+   fechaasig: Date;
+   plano: string;
+   cuadrillaInter: string;
+   nomcuadrillaInter: string;
+   ubicacion: string;
+   sector: string;
+   fechaLegal: any;
+   fechaIniEje: any = null;
+   fechaFinEje: any = null;
+   codigoerror: string;
+   descripcionerror: string;
+   fechaFin: any;
+   fechaInicio: any;
+   FechasETF: boolean = false;
+   fechaVaidarTF: boolean = false;
 
-   usuarioPorDefecto: string = 'SOPORTEGIS';
-   maquinaDefault: string = 'GYG-SOPORTE';
+   // Variable para almacenar el número de orden buscado
+   numeroOrdenBuscada: string;
 
+   constructor(private apiService: ApiService, private memoryService: MemoryService) {}
+
+   ngOnInit(): void {
+      this.setUser();
+      this.listaHistorialCambios = [];
+   }
    openModal() {
       this.showModal = true;
    }
@@ -41,107 +83,400 @@ export class ConsultarOrdenesComponent implements OnInit {
    closeModal() {
       this.showModal = false;
    }
-   constructor(
-      private apiService: ApiService,
-      private memoryService: MemoryService,
-      private modalService: ModalService,
-      private dataSharingService: DataSharingService
-   ) {
-      this.subscription = this.dataSharingService.getData().subscribe((data) => {
-         console.log('Datos compartidos recibidos:', data);
-         this.identifyResults = data;
+   checkBuscarOrden() {
+      this.buscarOrden = true;
+      this.buscarTag = false;
+   }
+   buscarTagElemento() {
+      this.buscarTag = true;
+      this.buscarOrden = false;
+   }
+   buscarDor() {
+      if (this.buscarOrden) {
+         this.buscarOrdenes(this.numeroOrden); // Llama a getOrders si buscarOrden está activo
+      } else if (this.buscarTag) {
+         this.getOrders(); // Llama a buscarOrdenes si buscarTag está activo
+      }
+   }
+
+   buscarOrdenes(numeroOrden: string) {
+      if (this.buscarOrden && this.numeroOrden) {
+         console.log('Buscando orden...');
+         console.log('Número de orden:', this.numeroOrden);
+
+         // Construye los parámetros para el procedimiento almacenado
+         const params = [
+            new InputParameter('una_orden', this.numeroOrden) // Asegúrate de que el tipo de dato sea el correcto
+         ];
+
+         this.apiService
+            .callStoreProcedureV2(
+               RequestHelper.getParamsForStoredProcedureV2(
+                  StoreProcedures.ObtenerInfoOrdenConsult,
+                  params
+               )
+            )
+            .subscribe((response) => {
+               console.log('Respuesta del servidor:', response);
+
+               this.fechagen = response[1];
+               this.fechaprog = response[2];
+               this.codactppal = response[3] + ' - ' + response[4];
+               this.codcuadrilla = response[5] + '-' + response[6];
+               this.codactgis = response[7] + ' - ' + response[8];
+               this.estado = response[9];
+               this.listap = response[10];
+               this.observacion = response[11];
+               this.estadolegal = response[12];
+               this.tipoOrdenCP = response[13];
+               this.tipotrabajo1 = response[14];
+               this.sTasktype = response[15];
+               this.ordenpadre = response[16];
+               this.tipoelemento = response[17];
+               this.fechaasig = response[18];
+               this.plano = response[19];
+               this.cuadrillaInter = response[20];
+               this.nomcuadrillaInter = response[21];
+               this.ubicacion = response[22];
+               this.sector = response[22];
+               this.fechaLegal = response[23];
+               this.fechaIniEje = response[24];
+               this.fechaFinEje = response[25];
+               this.codigoerror = response[26];
+               this.descripcionerror = response[27];
+               console.log(this.fechaLegal);
+
+               if (this.fechaLegal === 'null') {
+                  this.fechaLegal = '';
+               } else {
+                  this.fechaLegal;
+               }
+
+               // Cambiar el estado de la orden según el valor recibido
+               switch (response[9]) {
+                  case '0':
+                     this.estado = 'Registrada';
+                     break;
+                  case '5':
+                     this.estado = 'Asignada';
+                     break;
+                  case '6':
+                     this.estado = 'Inicio de ejecución';
+                     break;
+                  case '7':
+                     this.estado = 'Fin de Ejecución';
+                     break;
+                  case '8':
+                     this.estado = 'Legalizada';
+                     break;
+                  default:
+                     this.estado = 'Estado desconocido';
+                     break;
+               }
+               this.validarFechas();
+               this.tipoOrden();
+               this.Histocambioorden();
+            });
+      } else {
+         alert('Debe proporcionar un número de orden válido.');
+      }
+   }
+   Histocambioorden() {
+      if (this.buscarOrden && this.numeroOrden) {
+         console.log('Buscando histo...');
+         console.log('Número de orden con histo:', this.numeroOrden);
+         this.apiService
+            .callStoreProcedureV2(
+               RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.HistocambiosOrden, [
+                  new InputParameter('una_orden', this.numeroOrden)
+               ])
+            )
+            .subscribe((response) => {
+               // console.log('Respuesta del procedimiento histocambioorden:', response);
+
+               // Parsear la respuesta JSON
+               try {
+                  const jsonResponse = JSON.parse(response[1]);
+                  const historialCambios = jsonResponse.Table1;
+
+                  // Crear una lista para almacenar los elementos del historial de cambios
+                  const listaHistorialCambios = [];
+
+                  // Iterar sobre el array Table1 y agregar cada elemento a la lista
+                  historialCambios.forEach((cambio) => {
+                     this.listaHistorialCambios.push({
+                        IDCAMBIO: cambio.IDCAMBIO,
+                        ORDEN: cambio.ORDEN,
+                        FECHA: cambio.FECHA,
+                        USUARIO: cambio.USUARIO,
+                        MAQUINA: cambio.MAQUINA,
+                        OSF_ANT: cambio.OSF_ANT,
+                        OSF_NUE: cambio.OSF_NUE,
+                        GIS_ANT: cambio.GIS_ANT,
+                        GIS_NUE: cambio.GIS_NUE
+                     });
+                  });
+                  // Realiza las acciones necesarias con la respuesta del procedimiento
+               } catch (error) {
+                  console.error('Error al parsear JSON:', error);
+               }
+            });
+      } else {
+         alert('error.');
+      }
+   }
+
+   validarFechas() {
+      if (this.fechaIniEje != '01-JAN-00' && this.fechaFinEje != '01-JAN-00') {
+         const fechaEquipo = moment(this.fechaIniEje).format('YYYY-MM-DD');
+         const fechaEquipo1 = moment(this.fechaFinEje).format('YYYY-MM-DD');
+
+         this.fechaInicio = fechaEquipo;
+         this.fechaFin = fechaEquipo1;
+         this.fechaVaidarTF = true;
+         this.FechasETF = true;
+      } else {
+         this.fechaInicio = null;
+         this.fechaFin = null;
+         this.fechaVaidarTF = false;
+         this.FechasETF = false;
+      }
+   }
+
+   private setUser() {
+      this.user = this.memoryService.getItem('currentUser');
+      console.log(this.user);
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerPerfilUsuario, [
+               new InputParameter('un_id', this.user)
+            ])
+         )
+         .subscribe((json) => {
+            this.perfil = JSON.parse(json['1']);
+            console.log(this.perfil);
+            // this.getOrders();
+         });
+   }
+   getOrders() {
+      console.log('Buscando tags...');
+      if (this.buscarTag && this.numeroOrden) {
+         this.apiService
+            .callStoreProcedureV2(
+               RequestHelper.getParamsForStoredProcedureV2(
+                  StoreProcedures.OrdenesMantenimientoConsulta,
+                  [
+                     new InputParameter('una_elemento', this.numeroOrden),
+                     new InputParameter('un_estadoC', this.buscarTag),
+                     new InputParameter('una_orden', this.numeroOrden),
+                     new InputParameter('un_Resultado', '')
+                  ]
+               )
+            )
+            .subscribe((json) => {
+               console.log('Respuesta del procedimiento almacenado:', json);
+               const orders = JSON.parse(json['2'])['Table1']; // Obtener las órdenes
+               if (orders && orders.length > 0) {
+                  // Procesar las órdenes
+                  console.log('Órdenes encontradas:', orders);
+                  this.loadResultadoOrdenesCompleted(orders);
+
+                  // Pintar la información en el select
+                  this.resultOrders.forEach((order) => {
+                     const option = document.createElement('option');
+                     option.value = order.value;
+                     option.textContent = order.label;
+                     this.orderSelected.nativeElement.appendChild(option);
+                  });
+               } else {
+                  alert('No se encontraron órdenes.');
+               }
+            });
+      } else {
+         console.log('La búsqueda de órdenes está desactivada.');
+      }
+   }
+
+   loadResultadoOrdenesCompleted(orders: any[]) {
+      console.log('Cargando resultado de órdenes completado:', orders);
+      this.resultOrders = orders.map((order) => {
+         return {
+            label: `${order.ORDEN} - ${order['TIPO MANTENIMIENTO']}`,
+            value: order.ORDEN
+         };
       });
    }
+   onSelectOrder() {
+      console.log('Orden seleccionada:', this.orderSelected);
 
-   ngOnInit(): void {
-      // Llama a la función para obtener las órdenes realizadas
-      this.obtenerOrdenesRealizadas();
+      if (this.buscarOrden && this.orderSelected) {
+         this.buscarOrdenes(this.orderSelected); // Llamada con el argumento correcto
+      }
    }
 
-   obtenerOrdenesRealizadas() {
-      // Verificar si el localStorage está disponible en este navegador
-      if (typeof localStorage === 'undefined') {
-         console.error('El almacenamiento local no está disponible en este navegador.');
-         return;
-      }
+   // Dependiendo de la orden, trae los tags que se mostrarán en la tabla elementos.
+   getOrderTags() {
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerTagsCorrectivos, [
+               new InputParameter('una_orden', this.numeroOrden)
+            ])
+         )
+         .subscribe((json) => {
+            console.log('respuesta del servidor ordes', json);
 
-      // Recupera las órdenes realizadas desde localStorage
-      const ordenesString = localStorage.getItem('ordenesRealizadas');
+            if (json && json[1]) {
+               try {
+                  const jsonResponse = JSON.parse(json[1]);
+                  this.getOrderTagsCompleted(jsonResponse);
+               } catch (error) {
+                  console.error('Error al parsear JSON:', error);
+               }
+            } else {
+               console.error('Respuesta del servidor vacía o no válida:', json);
+            }
+         });
+   }
 
-      if (ordenesString) {
-         // Si hay información en localStorage, convierte la cadena JSON a un arreglo
-         this.ordenesRealizadas = JSON.parse(ordenesString);
+   getOrderTagsCompleted(jsonResult: any) {
+      if (jsonResult && jsonResult.Table1 && Array.isArray(jsonResult.Table1)) {
+         this.resultOrdersTag = jsonResult.Table1;
       } else {
-         // Si no hay información en localStorage, muestra un mensaje o realiza alguna acción predeterminada
-         console.log('No hay órdenes realizadas almacenadas en localStorage.');
+         console.error('La respuesta JSON no contiene un array "Table1" válido:', jsonResult);
       }
    }
 
-   seleccionarOrden() {
-      // Buscar los detalles de la orden seleccionada en el arreglo de órdenes realizadas
-      this.selectedOrderDetails = this.ordenesRealizadas.find(
-         (orden) => orden.numeroOrden === this.selectedOrder
-      );
-      this.id = this.selectedOrderDetails.id;
-      // Actualiza las propiedades del componente con los detalles de la orden
-      this.fechaGeneracion = this.selectedOrderDetails.fecha;
-      this.estadoOrden = this.selectedOrderDetails.estadoOrden;
-      this.activity = this.selectedOrderDetails.actividad;
-      this.observacion = this.selectedOrderDetails.observacion;
-      this.loadTableData(); // Carga los datos de la tabla correspondientes al número de orden
+   getCorrItems(tipoCP: any) {
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerItemsCorrectivo, [
+               new InputParameter('una_orden', this.numeroOrden),
+               new InputParameter('un_tipotrabajo', tipoCP)
+            ])
+         )
+         .subscribe((json) => {
+            console.log('respuesta del servidor Items', json);
+
+            if (json && json[2]) {
+               try {
+                  const jsonResponse = JSON.parse(json[2]);
+                  this.getCorrItemsCompleted(jsonResponse);
+               } catch (error) {
+                  console.error('Error al parsear JSON:', error);
+               }
+            } else {
+               console.error('Respuesta del servidor vacía o no válida:', json);
+            }
+         });
    }
 
-   loadTableData() {
-      if (this.selectedOrderDetails && this.selectedOrderDetails.tablaDatos) {
-         // Si hay datos de la tabla en los detalles de la orden, cárgalos en la tabla
-         this.tableData = this.selectedOrderDetails.tablaDatos;
-         // Actualiza los datos de la tabla
-         this.updateDataTable();
-      }
-   }
-
-   buscarOrdenes() {
-      if (!this.selectedOrder) {
-         alert('Por favor, selecciona un número de orden.');
-         return;
-      }
-
-      // Busca la orden seleccionada en el arreglo de órdenes realizadas
-      const ordenSeleccionada = this.ordenesRealizadas.find(
-         (orden) => orden.numeroOrden === this.selectedOrder
-      );
-
-      if (ordenSeleccionada) {
-         // Si se encuentra la orden, muestra sus detalles en los campos correspondientes
-         this.fechaGeneracion = ordenSeleccionada.fechaGeneracion;
-         this.estadoOrden = ordenSeleccionada.estadoOrden;
-         this.activity = ordenSeleccionada.activity;
-         this.observacion = ordenSeleccionada.observacion;
-         this.loadTableData(); // Carga los datos de la tabla correspondientes al número de orden
+   getCorrItemsCompleted(jsonTable: any) {
+      if (jsonTable && jsonTable.Table1 && Array.isArray(jsonTable.Table1)) {
+         this.resultCorrItems = jsonTable.Table1;
       } else {
-         // Si no se encuentra la orden, muestra un mensaje de error
-         alert('La orden seleccionada no se encuentra en la lista de órdenes realizadas.');
+         console.error('La respuesta JSON no contiene un array "Table1" válido:', jsonTable);
       }
    }
 
-   checkBuscarOrden() {}
-   buscarTagElemento() {}
-   updateDataTable() {
-      // Prepara los datos para la tabla basados en los objetos feature
-      const localData = [];
-      for (const feature of this.tableData) {
-         localData.push({ layerName: feature.layerName, value: feature.value });
+   getPrevItems(preStak: any) {
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerItemsPreventivo, [
+               new InputParameter('una_orden', this.numeroOrden),
+               new InputParameter('un_tipotrabajo', preStak)
+            ])
+         )
+         .subscribe((json) => {
+            console.log('respuesta del servidor PrevItems', json);
+
+            if (json && json[2]) {
+               try {
+                  const jsonResponse = JSON.parse(json[2]);
+                  this.getPrevItemsCompleted(jsonResponse);
+               } catch (error) {
+                  console.error('Error al parsear JSON:', error);
+               }
+            } else {
+               console.error('Respuesta del servidor vacía o no válida:', json);
+            }
+         });
+   }
+
+   getPrevItemsCompleted(jsonPrevItems: any) {
+      if (jsonPrevItems && jsonPrevItems.Table1) {
+         this.dataPreItems = jsonPrevItems.Table1;
+      } else {
+         console.error(
+            'La respuesta JSON no contiene una propiedad "Table1" válida:',
+            jsonPrevItems
+         );
       }
+   }
 
-      const source = {
-         datatype: 'array',
-         dataFields: [
-            { name: 'layerName', type: 'string' },
-            { name: 'value', type: 'string' }
-         ],
-         localdata: localData
-      };
+   // Dependiendo del tipo de orden (P,C,CP) llena la tabla de correctivo, items y elementos.
+   tipoOrden() {
+      switch (this.tipoOrdenCP) {
+         case 'P': //Preventivo
+            this.getPrevItems(this.sTasktype);
+            this.getCorrItems(this.sTasktype);
+            this.getOrderTags();
+            break;
+         case 'C': //Correctivo
+            this.getPrevItems(this.sTasktype);
+            this.getCorrItems(this.sTasktype);
+            this.getOrderTags();
+            // prueba
+            // this.observacion = null;
+            break;
+         case 'CP': //Correctivo por Preventivo
+            this.getPrevItems(this.sTasktype);
+            this.getCorrItems(this.sTasktype);
+            this.getOrderTags();
 
-      this.dataAdapter = new jqx.dataAdapter(source);
+            break;
+      }
+   }
+
+   //METODO PARA ELIMINAR TODO CUANDO CIERRE EL MODAL
+   clearData(): void {
+      this.resultOrders = [];
+      this.perfil = null;
+      this.user = null;
+      this.checkLegalized = 0;
+      this.orderSelected = null;
+      this.txtEstadoOrden = null;
+      this.resultOrdersTag = null;
+      this.dataPreItems = null;
+      this.resultCorrItems = null;
+      this.tipoOrdenCP = null;
+      this.listaHistorialCambios = [];
+      this.fechagen = null;
+      this.fechaprog = null;
+      this.codactppal = null;
+      this.actppal = null;
+      this.codcuadrilla = null;
+      this.cuadrilla = null;
+      this.codactgis = null;
+      this.actgis = null;
+      this.estado = null;
+      this.listap = null;
+      this.observacion = null;
+      this.estadolegal = null;
+      this.tipomantenimiento = null;
+      this.tipotrabajo1 = null;
+      this.tipotrabajo2 = null;
+      this.ordenpadre = null;
+      this.tipoelemento = null;
+      this.fechaasig = null;
+      this.plano = null;
+      this.cuadrillaInter = null;
+      this.nomcuadrillaInter = null;
+      this.ubicacion = null;
+      this.sector = null;
+      this.fechaLegal = null;
+      this.fechaIniEje = null;
+      this.fechaFinEje = null;
+      this.codigoerror = null;
+      this.descripcionerror = null;
    }
 }
