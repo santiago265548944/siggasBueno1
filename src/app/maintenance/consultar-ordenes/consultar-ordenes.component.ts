@@ -123,7 +123,7 @@ export class ConsultarOrdenesComponent implements OnInit {
                this.fechaprog = response[2];
                this.codactppal = response[3] + ' - ' + response[4];
                this.codcuadrilla = response[5] + '-' + response[6];
-               this.codactgis = response[7] + ' - ' + response[8];
+               this.codactgis = response[7] + ' - ' + response[4];
                this.estado = response[9];
                this.listap = response[10];
                this.observacion = response[11];
@@ -192,7 +192,7 @@ export class ConsultarOrdenesComponent implements OnInit {
                ])
             )
             .subscribe((response) => {
-               // console.log('Respuesta del procedimiento histocambioorden:', response);
+               console.log('Respuesta del procedimiento histocambioorden:', response);
 
                // Parsear la respuesta JSON
                try {
@@ -306,12 +306,79 @@ export class ConsultarOrdenesComponent implements OnInit {
          };
       });
    }
-   onSelectOrder() {
+   onSelectOrder(order: any) {
       console.log('Orden seleccionada:', this.orderSelected);
 
-      if (this.buscarOrden && this.orderSelected) {
-         this.buscarOrdenes(this.orderSelected); // Llamada con el argumento correcto
-      }
+      // Aquí puedes llamar a un método para obtener y mostrar la información relacionada con el número de orden seleccionado
+      this.getOrdenInfo(this.orderSelected);
+   }
+
+   getOrdenInfo(orderSelected: string) {
+      // Construye los parámetros para el procedimiento almacenado
+      const params = [
+         new InputParameter('una_orden', orderSelected) // Asegúrate de que el tipo de dato sea el correcto
+      ];
+
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(
+               StoreProcedures.ObtenerInfoOrdenConsult,
+               params
+            )
+         )
+         .subscribe((response) => {
+            console.log('Respuesta del servidor:', response);
+
+            this.fechagen = response[1];
+            this.fechaprog = response[2];
+            this.codactppal = response[3] + ' - ' + response[4];
+            this.codcuadrilla = response[5] + '-' + response[6];
+            this.codactgis = response[7] + ' - ' + response[4];
+            this.estado = response[9];
+            this.listap = response[10];
+            this.observacion = response[11];
+            this.estadolegal = response[12];
+            this.tipoOrdenCP = response[13];
+            this.tipotrabajo1 = response[14];
+            this.sTasktype = response[15];
+            this.ordenpadre = response[16];
+            this.tipoelemento = response[17];
+            this.fechaasig = response[18];
+            this.plano = response[19];
+            this.cuadrillaInter = response[20];
+            this.nomcuadrillaInter = response[21];
+            this.ubicacion = response[22];
+            this.sector = response[22];
+            this.fechaLegal = response[23];
+            this.fechaIniEje = response[24];
+            this.fechaFinEje = response[25];
+            this.codigoerror = response[26];
+            this.descripcionerror = response[27];
+
+            // Cambiar el estado de la orden segun el valor recibido
+            switch (response[9]) {
+               case '0':
+                  this.estado = 'Registrada';
+                  break;
+               case '5':
+                  this.estado = 'Asignada';
+                  break;
+               case '6':
+                  this.estado = 'Inicio de ejecución';
+                  break;
+               case '7':
+                  this.estado = 'Fin de Ejecución';
+                  break;
+               case '8':
+                  this.estado = 'Legalizada';
+                  break;
+               default:
+                  this.estado = 'Estado desconocido';
+                  break;
+            }
+            this.tipoOrden();
+            this.getOrderTags();
+         });
    }
 
    // Dependiendo de la orden, trae los tags que se mostrarán en la tabla elementos.
@@ -319,7 +386,8 @@ export class ConsultarOrdenesComponent implements OnInit {
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerTagsCorrectivos, [
-               new InputParameter('una_orden', this.numeroOrden)
+               new InputParameter('una_orden', this.numeroOrden),
+               new InputParameter('una_orden', this.orderSelected)
             ])
          )
          .subscribe((json) => {
@@ -351,6 +419,8 @@ export class ConsultarOrdenesComponent implements OnInit {
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerItemsCorrectivo, [
                new InputParameter('una_orden', this.numeroOrden),
+               new InputParameter('una_orden', this.orderSelected),
+
                new InputParameter('un_tipotrabajo', tipoCP)
             ])
          )
@@ -383,6 +453,7 @@ export class ConsultarOrdenesComponent implements OnInit {
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerItemsPreventivo, [
                new InputParameter('una_orden', this.numeroOrden),
+               new InputParameter('una_orden', this.orderSelected),
                new InputParameter('un_tipotrabajo', preStak)
             ])
          )

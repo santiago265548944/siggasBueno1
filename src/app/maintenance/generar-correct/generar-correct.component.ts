@@ -226,10 +226,16 @@ export class GenerarCorrectComponent implements OnInit {
    }
 
    Remover() {
+      // Limpiar variables y arrays
+      this.selectedActividad = null;
+      this.selectedTipoActividad = null;
       this.observacion = '';
       this.observable = '';
       this.selectedFeatures = [];
       this.capturedInformation = [];
+
+      // Restablecer el estado del formulario
+      this.informacionCargadaEnTabla = false;
    }
 
    Cancelar() {

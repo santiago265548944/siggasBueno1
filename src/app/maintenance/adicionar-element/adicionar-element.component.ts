@@ -120,32 +120,7 @@ export class AdicionarElementComponent implements OnInit {
          )
          .subscribe((json) => {
             console.log('Respuesta del procedimiento almacenado:', json);
-            if (json['0'] && json['0'].ErrorMessage) {
-               alert('Error: ' + json['0'].ErrorMessage);
-               this.informacionCargadaEnTabla = false; // Desactivar el formulario
-               return; // Salir de la función si hay un error
-            }
 
-            const un_codigoerror = json['5']; // Obtener el código de error
-            if (un_codigoerror !== 0) {
-               const un_msgerror = json['6']; // Obtener el mensaje de error
-               alert('Error: ' + un_msgerror);
-               this.informacionCargadaEnTabla = false; // Desactivar el formulario
-            } else {
-               const un_departamento = json['3']; // Obtener el departamento
-               const una_localidad = json['4']; // Obtener la localidad
-               console.log('Departamento:', un_departamento);
-               console.log('Localidad:', una_localidad);
-
-               // Aquí puedes realizar alguna acción con los parámetros de salida si es necesario
-               if (!un_departamento && !una_localidad) {
-                  alert('No se encontraron elementos para agregar.');
-                  this.informacionCargadaEnTabla = false; // Desactivar el formulario
-               } else {
-                  this.informacionCargadaEnTabla = true; // Activar el formulario
-                  this.loadResultadoOrdenesCompleted(json['7']); // Cargar los resultados en la tabla
-               }
-            }
             this.getOrders();
          });
    }
@@ -155,7 +130,7 @@ export class AdicionarElementComponent implements OnInit {
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(
-               StoreProcedures.OrdenesAsignadasPorLocalidad,
+               StoreProcedures.OrdenesMantenimientoConsulta,
                []
             )
          )
