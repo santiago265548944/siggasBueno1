@@ -8,6 +8,7 @@ import { StoreProcedures } from '../../api/request/store-procedures.enum';
 import { RequestHelper } from '../../api/request/request-helper';
 import { InputParameter } from '../../api/request/input-parameter';
 import * as moment from 'moment';
+import { GlobalService } from '../../Globals/global.service';
 
 @Component({
    selector: 'app-consultar-ordenes',
@@ -32,10 +33,12 @@ export class ConsultarOrdenesComponent implements OnInit {
    tipoOrdenCP: string;
    listaHistorialCambios: any[];
    sTasktype: any;
+   causalExecute: Subscription;
+
 
    // variable para almacenar los datos de la consulta
-   fechagen: Date;
-   fechaprog: Date;
+   fechagen: any;
+   fechaprog: any;
    codactppal: string;
    actppal: string;
    codcuadrilla: string;
@@ -51,7 +54,7 @@ export class ConsultarOrdenesComponent implements OnInit {
    tipotrabajo2: string;
    ordenpadre: string;
    tipoelemento: string;
-   fechaasig: Date;
+   fechaasig: any;
    plano: string;
    cuadrillaInter: string;
    nomcuadrillaInter: string;
@@ -70,7 +73,10 @@ export class ConsultarOrdenesComponent implements OnInit {
    // Variable para almacenar el número de orden buscado
    numeroOrdenBuscada: string;
 
-   constructor(private apiService: ApiService, private memoryService: MemoryService) {}
+      
+      constructor(private apiService: ApiService, private memoryService: MemoryService, private globals: GlobalService) {
+
+   }
 
    ngOnInit(): void {
       this.setUser();
@@ -101,8 +107,8 @@ export class ConsultarOrdenesComponent implements OnInit {
 
    buscarOrdenes(numeroOrden: string) {
       if (this.buscarOrden && this.numeroOrden) {
-         console.log('Buscando orden...');
-         console.log('Número de orden:', this.numeroOrden);
+         // console.log('Buscando orden...');
+         // console.log('Número de orden:', this.numeroOrden);
 
          // Construye los parámetros para el procedimiento almacenado
          const params = [
@@ -138,12 +144,12 @@ export class ConsultarOrdenesComponent implements OnInit {
                this.cuadrillaInter = response[20];
                this.nomcuadrillaInter = response[21];
                this.ubicacion = response[22];
-               this.sector = response[22];
-               this.fechaLegal = response[23];
-               this.fechaIniEje = response[24];
-               this.fechaFinEje = response[25];
-               this.codigoerror = response[26];
-               this.descripcionerror = response[27];
+               this.sector = response[23];
+               this.fechaLegal = response[24];
+               this.fechaIniEje = response[25];
+               this.fechaFinEje = response[26];
+               this.codigoerror = response[27];
+               this.descripcionerror = response[28];
                console.log(this.fechaLegal);
 
                if (this.fechaLegal === 'null') {
@@ -193,28 +199,31 @@ export class ConsultarOrdenesComponent implements OnInit {
             )
             .subscribe((response) => {
                console.log('Respuesta del procedimiento histocambioorden:', response);
-
+   
                // Parsear la respuesta JSON
                try {
                   const jsonResponse = JSON.parse(response[1]);
                   const historialCambios = jsonResponse.Table1;
-
-                  // Crear una lista para almacenar los elementos del historial de cambios
-                  const listaHistorialCambios = [];
-
+   
                   // Iterar sobre el array Table1 y agregar cada elemento a la lista
                   historialCambios.forEach((cambio) => {
-                     this.listaHistorialCambios.push({
-                        IDCAMBIO: cambio.IDCAMBIO,
-                        ORDEN: cambio.ORDEN,
-                        FECHA: cambio.FECHA,
-                        USUARIO: cambio.USUARIO,
-                        MAQUINA: cambio.MAQUINA,
-                        OSF_ANT: cambio.OSF_ANT,
-                        OSF_NUE: cambio.OSF_NUE,
-                        GIS_ANT: cambio.GIS_ANT,
-                        GIS_NUE: cambio.GIS_NUE
-                     });
+                     // Verificar si el cambio ya existe en la lista
+                     const existe = this.listaHistorialCambios.some(item => item.IDCAMBIO === cambio.IDCAMBIO);
+   
+                     // Si el cambio no existe en la lista, agregarlo
+                     if (!existe) {
+                        this.listaHistorialCambios.push({
+                           IDCAMBIO: cambio.IDCAMBIO,
+                           ORDEN: cambio.ORDEN,
+                           FECHA: cambio.FECHA,
+                           USUARIO: cambio.USUARIO,
+                           MAQUINA: cambio.MAQUINA,
+                           OSF_ANT: cambio.OSF_ANT,
+                           OSF_NUE: cambio.OSF_NUE,
+                           GIS_ANT: cambio.GIS_ANT,
+                           GIS_NUE: cambio.GIS_NUE
+                        });
+                     }
                   });
                   // Realiza las acciones necesarias con la respuesta del procedimiento
                } catch (error) {
@@ -225,27 +234,37 @@ export class ConsultarOrdenesComponent implements OnInit {
          alert('error.');
       }
    }
+   
 
    validarFechas() {
-      if (this.fechaIniEje != '01-JAN-00' && this.fechaFinEje != '01-JAN-00') {
-         const fechaEquipo = moment(this.fechaIniEje).format('YYYY-MM-DD');
-         const fechaEquipo1 = moment(this.fechaFinEje).format('YYYY-MM-DD');
-
-         this.fechaInicio = fechaEquipo;
-         this.fechaFin = fechaEquipo1;
-         this.fechaVaidarTF = true;
-         this.FechasETF = true;
-      } else {
-         this.fechaInicio = null;
-         this.fechaFin = null;
-         this.fechaVaidarTF = false;
-         this.FechasETF = false;
+      // Verifica que las fechas no sean null ni undefined
+      if (this.fechaIniEje !== null && this.fechaFinEje !== null &&
+          this.fechaIniEje !== undefined && this.fechaFinEje !== undefined) {
+          // Verifica que las fechas no sean cadenas vacías
+          if (this.fechaIniEje.trim() !== '' && this.fechaFinEje.trim() !== '') {
+              // Formatea las fechas
+              const fechaEquipo = moment(this.fechaIniEje, 'DD-MMM-YY').format('YYYY-MM-DD');
+              const fechaEquipo1 = moment(this.fechaFinEje, 'DD-MMM-YY').format('YYYY-MM-DD');
+  
+              this.fechaInicio = fechaEquipo;
+              this.fechaFin = fechaEquipo1;
+              this.fechaVaidarTF = true;
+              this.FechasETF = true;
+              return; // Sale del método después de validar y formatear las fechas
+          }
       }
-   }
-
+      
+      // Si alguna de las condiciones anteriores no se cumple, asigna null a las fechas
+      this.fechaInicio = null;
+      this.fechaFin = null;
+      this.fechaVaidarTF = false;
+      this.FechasETF = false;
+  }
+  
+    
    private setUser() {
       this.user = this.memoryService.getItem('currentUser');
-      console.log(this.user);
+      // console.log(this.user);
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerPerfilUsuario, [
@@ -254,12 +273,12 @@ export class ConsultarOrdenesComponent implements OnInit {
          )
          .subscribe((json) => {
             this.perfil = JSON.parse(json['1']);
-            console.log(this.perfil);
+            // console.log(this.perfil);
             // this.getOrders();
          });
    }
    getOrders() {
-      console.log('Buscando tags...');
+      // console.log('Buscando tags...');
       if (this.buscarTag && this.numeroOrden) {
          this.apiService
             .callStoreProcedureV2(
@@ -274,11 +293,11 @@ export class ConsultarOrdenesComponent implements OnInit {
                )
             )
             .subscribe((json) => {
-               console.log('Respuesta del procedimiento almacenado:', json);
+               // console.log('Respuesta del procedimiento almacenado:', json);
                const orders = JSON.parse(json['2'])['Table1']; // Obtener las órdenes
                if (orders && orders.length > 0) {
                   // Procesar las órdenes
-                  console.log('Órdenes encontradas:', orders);
+                  // console.log('Órdenes encontradas:', orders);
                   this.loadResultadoOrdenesCompleted(orders);
 
                   // Pintar la información en el select
@@ -298,7 +317,7 @@ export class ConsultarOrdenesComponent implements OnInit {
    }
 
    loadResultadoOrdenesCompleted(orders: any[]) {
-      console.log('Cargando resultado de órdenes completado:', orders);
+      // console.log('Cargando resultado de órdenes completado:', orders);
       this.resultOrders = orders.map((order) => {
          return {
             label: `${order.ORDEN} - ${order['TIPO MANTENIMIENTO']}`,
@@ -307,7 +326,7 @@ export class ConsultarOrdenesComponent implements OnInit {
       });
    }
    onSelectOrder(order: any) {
-      console.log('Orden seleccionada:', this.orderSelected);
+      // console.log('Orden seleccionada:', this.orderSelected);
 
       // Aquí puedes llamar a un método para obtener y mostrar la información relacionada con el número de orden seleccionado
       this.getOrdenInfo(this.orderSelected);
@@ -327,7 +346,7 @@ export class ConsultarOrdenesComponent implements OnInit {
             )
          )
          .subscribe((response) => {
-            console.log('Respuesta del servidor:', response);
+            // console.log('Respuesta del servidor:', response);
 
             this.fechagen = response[1];
             this.fechaprog = response[2];
@@ -348,12 +367,12 @@ export class ConsultarOrdenesComponent implements OnInit {
             this.cuadrillaInter = response[20];
             this.nomcuadrillaInter = response[21];
             this.ubicacion = response[22];
-            this.sector = response[22];
-            this.fechaLegal = response[23];
-            this.fechaIniEje = response[24];
-            this.fechaFinEje = response[25];
-            this.codigoerror = response[26];
-            this.descripcionerror = response[27];
+            this.sector = response[23];
+            this.fechaLegal = response[24];
+            this.fechaIniEje = response[25];
+            this.fechaFinEje = response[26];
+            this.codigoerror = response[27];
+            this.descripcionerror = response[28];
 
             // Cambiar el estado de la orden segun el valor recibido
             switch (response[9]) {
@@ -377,21 +396,23 @@ export class ConsultarOrdenesComponent implements OnInit {
                   break;
             }
             this.tipoOrden();
-            this.getOrderTags();
+            // this.getOrderTags();
+            this.validarFechas();
          });
    }
 
    // Dependiendo de la orden, trae los tags que se mostrarán en la tabla elementos.
    getOrderTags() {
+      let buscaNumeroOrden = this.buscarOrden ? this.numeroOrden : this.orderSelected;
+
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerTagsCorrectivos, [
-               new InputParameter('una_orden', this.numeroOrden),
-               new InputParameter('una_orden', this.orderSelected)
+               new InputParameter('una_orden', buscaNumeroOrden),
             ])
          )
          .subscribe((json) => {
-            console.log('respuesta del servidor ordes', json);
+            // console.log('respuesta del servidor ordes', json);
 
             if (json && json[1]) {
                try {
@@ -415,17 +436,18 @@ export class ConsultarOrdenesComponent implements OnInit {
    }
 
    getCorrItems(tipoCP: any) {
+      let buscaNumeroOrden = this.buscarOrden ? this.numeroOrden : this.orderSelected;
+
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerItemsCorrectivo, [
-               new InputParameter('una_orden', this.numeroOrden),
-               new InputParameter('una_orden', this.orderSelected),
+               new InputParameter('una_orden', buscaNumeroOrden),
 
                new InputParameter('un_tipotrabajo', tipoCP)
             ])
          )
          .subscribe((json) => {
-            console.log('respuesta del servidor Items', json);
+            // console.log('respuesta del servidor Items', json);
 
             if (json && json[2]) {
                try {
@@ -449,16 +471,17 @@ export class ConsultarOrdenesComponent implements OnInit {
    }
 
    getPrevItems(preStak: any) {
+      let buscaNumeroOrden = this.buscarOrden ? this.numeroOrden : this.orderSelected;
+
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerItemsPreventivo, [
-               new InputParameter('una_orden', this.numeroOrden),
-               new InputParameter('una_orden', this.orderSelected),
+               new InputParameter('una_orden', buscaNumeroOrden),
                new InputParameter('un_tipotrabajo', preStak)
             ])
          )
          .subscribe((json) => {
-            console.log('respuesta del servidor PrevItems', json);
+            // console.log('respuesta del servidor PrevItems', json);
 
             if (json && json[2]) {
                try {

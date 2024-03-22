@@ -7,7 +7,7 @@
             type="radio"
             name="inlineRadioOptions"
             (click)="checkBuscarOrden()"
-            [checked]="!buscarTag"
+            [checked]="buscarTag"
          />
          <label class="form-check-label" for="flexRadioDefault1"> Buscar Orden </label>
          <br />
@@ -140,7 +140,7 @@
             type="text"
             id="date_programming"
             class="row1-input"
-            [(ngModel)]="fechaasig"
+            [(ngModel)]="fechaprog"
             readonly
             [disabled]="buscarOrden"
          />

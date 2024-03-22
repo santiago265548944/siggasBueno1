@@ -18,6 +18,8 @@ import { DataSharingService } from '../../service/data-sharing.service';
 import { IdentidaPredioService } from '../../service/IdentidaPredio.service';
 import { jqxTabsComponent } from 'jqwidgets-scripts/jqwidgets-ts/angular_jqxtabs';
 import { InputParameter } from '../../api/request/input-parameter';
+import { v4 as uuidv4 } from 'uuid';
+
 
 @Component({
    selector: 'app-generar-correct',
@@ -49,6 +51,8 @@ export class GenerarCorrectComponent implements OnInit {
    identifyResults: any;
    sharedData: any[] = [];
    lastOrderId: number = 0;
+   departamento: any;
+   closeFunction: Function;
 
    asociarDireccion: boolean = false;
 
@@ -95,6 +99,28 @@ export class GenerarCorrectComponent implements OnInit {
             // Cargar datos en los selects
             this.loadDropDownTipoActivity();
             this.loadDropDownActivity();
+
+             // Convertir el código de departamento a su nombre correspondiente
+      switch (departamento) {
+         case 5:
+            this.departamento = 'MAGDALENA';
+            break;
+         case 6:
+            this.departamento = 'CESAR';
+            break;
+         case 9:
+            this.departamento = 'BOLIVAR';
+            break;
+         case 2:
+            this.departamento = 'ATLANTICO';
+            break;
+         case 22:
+            this.departamento = 'HUECO';
+            break;
+         default:
+            this.departamento = 'Departamento Desconocido';
+            break;
+      }
          } else {
             // Si no hay características seleccionadas, desactivar los formularios
             this.informacionCargadaEnTabla = false;
@@ -103,7 +129,7 @@ export class GenerarCorrectComponent implements OnInit {
       this.dataSharingService.getSelectedSelectValue().subscribe((value) => {
          // Recibir y asignar el valor del select
          if (value.toString() === '46') {
-            this.selectedValue = 'TuberiaP80';
+            this.selectedValue = 'TUBERIAP80';
          } else {
             this.selectedValue = value;
          }
@@ -244,7 +270,9 @@ export class GenerarCorrectComponent implements OnInit {
       if (confirmacion) {
          this.selectedActividad = '';
          this.selectedTipoActividad = '';
+         this.closeFunction();
       }
+      
    }
 
    // generarOrden() {
@@ -335,67 +363,63 @@ export class GenerarCorrectComponent implements OnInit {
          alert('Por favor seleccione todos los elementos necesarios para generar la orden.');
          return;
       }
-      const una_actividad_gis = this.selectedActividad.CODIGO;
-      const una_actividad = this.selectedTipoActividad.CODIGO;
-      const una_observacion = this.observable;
-      const un_elemento = this.selectedValue.toString();
+      const actividadgis = this.selectedActividad.CODIGO;
+      const actividad = this.selectedTipoActividad.PORCENTAJE;
+      const abservacion = this.observable;
+      const elemento = this.selectedValue;
       const tags = this.selectedFeatures[0].attributes.TAG;
-      const un_departamento = this.selectedFeatures[0].attributes.DEPARTAMENTO;
-      const una_localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
+      const departamento = this.departamento;
+      const localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
+      const guid = uuidv4();
 
-      console.log('una_actividad_gis:', una_actividad_gis);
-      console.log('una_actividad:', una_actividad);
+      console.log('UN_GUID:', guid);
+      console.log('una_actividad_gis:', actividadgis);
+      console.log('una_actividad:', actividad);
       console.log('tags:', tags);
-      console.log('un_elemento:', un_elemento);
-      console.log('una_observacion:', una_observacion);
-      console.log('un_departamento:', un_departamento);
-      console.log('una_localidad:', una_localidad);
+      console.log('un_elemento:', elemento);
+      console.log('una_observacion:', abservacion);
+      console.log('un_departamento:', departamento);
+      console.log('una_localidad:', localidad);
 
       this.apiService
-         .callStoreProcedureV2(
-            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.GenerarOrdenCorrectivo, [
-               new InputParameter('una_actividad_gis', una_actividad_gis),
-               new InputParameter('una_actividad', una_actividad),
-               new InputParameter('tags', tags.toString()),
-               new InputParameter('un_elemento', un_elemento),
-               new InputParameter('una_observacion', una_observacion),
-               new InputParameter('un_departamento', un_departamento),
-               new InputParameter('una_localidad', una_localidad),
-               new InputParameter('ionuorderid', { type: 'out', value: null }),
-               new InputParameter('onuerrorcode', { type: 'out', value: null }),
-               new InputParameter('osberrormessage', { type: 'out', value: null })
-            ])
-         )
+    .callStoreProcedureV2(
+        RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.GenerarOrdenCorrectivo, [
+            new InputParameter('una_Actividad_gis', actividadgis),
+            new InputParameter('una_Actividad', actividad),
+            new InputParameter('tags', tags),
+            new InputParameter('un_elemento', elemento),
+            new InputParameter('una_observacion', abservacion),
+            new InputParameter('un_suscriptor', null),
+            new InputParameter('ionuorderid', null),
+            new InputParameter('onuerrorcode', null),
+            new InputParameter('osberrormessage', null),
+            new InputParameter('un_departamento', departamento),
+            new InputParameter('una_localidad', localidad),
+            new InputParameter('un_guid', guid),
+            new InputParameter('un_addressid', null),
+        ])
+    )
          .subscribe((response) => {
-            console.log('respuesta del procedimiento', response);
+            console.log('respuesta del procedimiento ', response);
             if (response && response.length > 0) {
                const result = response[0];
                const errorCode = result['onuerrorcode'];
-               const errorMessage = result['osberrormessage'];
+               const errorMessage = result.osbErrorMessage;
 
                if (errorCode === 0) {
-                  const ordenId = result['ionuorderid'];
-                  if (ordenId) {
+                  const ordenId = result.ionuorderid;
+                  if (ordenId != null) {
                      alert(`Orden generada exitosamente. Número de orden: ${ordenId}`);
                   } else {
                      alert('La orden no pudo ser generada correctamente.');
                   }
-
-                  // Resto de la lógica para limpiar el formulario y emitir el evento de cerrar
-                  this.selectedActividad = null;
-                  this.selectedTipoActividad = null;
-                  this.observacion = '';
-                  this.observable = '';
-                  this.selectedFeatures = [];
-                  this.capturedInformation = [];
-
-                  this.closed.emit();
                } else {
                   alert(`Error generando la orden: ${errorMessage}`);
                }
             } else {
                alert('Error en la respuesta del servidor');
             }
+            this.startProgress();
          });
    }
 

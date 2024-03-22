@@ -70,6 +70,7 @@ export enum StoreProcedures {
    EliminarPrensa = 'REDES.EliminarPrensa',
    ObtenerElementosParaAgregar = 'MANTENIMIENTO.ObtenerElementosParaAgregar',
    GenerarOrdenCorrectivoLocal = 'MANTENIMIENTO.GenerarOrdenCorrectivoLocal',
+   GenerarCorrectivo = 'MANTENIMIENTO.GenerarCorrectivo',
    ObtenerActividadPorTipo = 'MANTENIMIENTO.ObtenerActividadPorTipo',
    ObtenerInfoOrdenConsult = 'MANTENIMIENTO.ObtenerInfoOrdenConsult',
    HistocambiosOrden = 'MANTENIMIENTO.HistocambiosOrden',

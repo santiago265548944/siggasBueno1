@@ -21,6 +21,9 @@ export class AdicionarElementComponent implements OnInit {
    user: any;
    perfil: any;
    checkLegalized = 0;
+   departamento: any;
+   closeFunction: Function;
+
 
    selectedValue: any;
 
@@ -55,6 +58,30 @@ export class AdicionarElementComponent implements OnInit {
 
             // Cargar datos en los selects
             this.setUser();
+            // this.elementosAgregar();
+
+
+            // Convertir el código de departamento a su nombre correspondiente
+      switch (departamento) {
+         case 5:
+            this.departamento = 'MAGDALENA';
+            break;
+         case 6:
+            this.departamento = 'CESAR';
+            break;
+         case 9:
+            this.departamento = 'BOLIVAR';
+            break;
+         case 2:
+            this.departamento = 'ATLANTICO';
+            break;
+         case 22:
+            this.departamento = 'HUECO';
+            break;
+         default:
+            this.departamento = 'Departamento Desconocido';
+            break;
+      }
          } else {
             // Si no hay características seleccionadas, desactivar los formularios
             this.informacionCargadaEnTabla = false;
@@ -68,7 +95,7 @@ export class AdicionarElementComponent implements OnInit {
          } else {
             this.selectedValue = value;
          }
-         console.log('este es el value ', this.selectedValue);
+         // console.log('este es el value ', this.selectedValue);
       });
    }
 
@@ -91,11 +118,10 @@ export class AdicionarElementComponent implements OnInit {
    //obtiene elementos para agregar
    private elementosAgregar() {
       if (!this.selectedValue) {
-         // Si el elemento no tiene valor, desactivar el formulario o mostrar un mensaje
          this.informacionCargadaEnTabla = false;
          return;
       }
-
+   
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(
@@ -103,35 +129,46 @@ export class AdicionarElementComponent implements OnInit {
                [
                   new InputParameter('un_elemento', this.selectedValue),
                   new InputParameter('un_usuario', this.user),
-                  new InputParameter('un_equipo', 'equipo_prueba'),
+                  new InputParameter('un_equipo', 0),
                   new InputParameter(
                      'un_departamento',
-                     this.selectedFeatures[0].attributes.DEPARTAMENTO
+                     this.departamento
                   ),
                   new InputParameter(
                      'una_localidad',
                      this.selectedFeatures[0].attributes.LOCALIDAD
                   ),
                   new InputParameter('un_codigoerror', 0),
-                  new InputParameter('un_msgerror', ''),
-                  new InputParameter('un_Resultado', null)
+                  new InputParameter('un_msgerror', 0),
+                  new InputParameter('un_Resultado', 0)
                ]
             )
          )
          .subscribe((json) => {
+            if (json[0] && json[0].ErrorMessage) {
+               console.error('Error en el procedimiento almacenado:', json[0].ErrorMessage);
+               alert('No se encontraron elementos')
+               return;
+            }
+   
             console.log('Respuesta del procedimiento almacenado:', json);
-
-            this.getOrders();
+            // this.getOrders();
          });
    }
+   
 
    // Obtiene las ordenesAsignadasporlocalidad
    private getOrders() {
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(
-               StoreProcedures.OrdenesMantenimientoConsulta,
-               []
+               StoreProcedures.OrdenesAsignadasPorLocalidad,
+               [
+                  new InputParameter('un_departameneto', this.departamento),
+                  new InputParameter('una_localidad', this.selectedFeatures[0].attributes.LOCALIDAD),
+                  new InputParameter('un_tipoelemento', this.selectedValue),
+                  new InputParameter('un_Resultado', 0),
+               ]
             )
          )
          .subscribe((json) => {
@@ -157,7 +194,7 @@ export class AdicionarElementComponent implements OnInit {
       }
 
       console.log('selectedValue:', this.selectedValue);
-      const un_departamento = this.selectedFeatures[0].attributes.DEPARTAMENTO;
+      const un_departamento = this.departamento;
       const una_localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
       const tag = this.selectedFeatures[0].attributes.TAG;
       const un_tipoelemento = this.selectedValue;
@@ -178,7 +215,7 @@ export class AdicionarElementComponent implements OnInit {
                new InputParameter('un_tipoelemento', un_tipoelemento),
                new InputParameter('tag', tag),
                new InputParameter('un_codigoerror', 0), // Parámetro de salida para código de error
-               new InputParameter('un_msgerror', '') // Parámetro de salida para mensaje de error
+               new InputParameter('un_msgerror', 0) // Parámetro de salida para mensaje de error
             ])
          )
          .subscribe((json) => {
@@ -191,6 +228,7 @@ export class AdicionarElementComponent implements OnInit {
             } else {
                // Mostrar mensaje de éxito si lo deseas
                alert('Elementos agregados correctamente!');
+               this.closeFunction();
             }
          });
    }
