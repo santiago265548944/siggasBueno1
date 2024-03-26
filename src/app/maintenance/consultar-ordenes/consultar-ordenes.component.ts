@@ -106,6 +106,7 @@ export class ConsultarOrdenesComponent implements OnInit {
    }
 
    buscarOrdenes(numeroOrden: string) {
+      this.startProgress();
       if (this.buscarOrden && this.numeroOrden) {
          // console.log('Buscando orden...');
          // console.log('Número de orden:', this.numeroOrden);
@@ -123,7 +124,7 @@ export class ConsultarOrdenesComponent implements OnInit {
                )
             )
             .subscribe((response) => {
-               console.log('Respuesta del servidor:', response);
+               // console.log('Respuesta del servidor:', response);
 
                this.fechagen = response[1];
                this.fechaprog = response[2];
@@ -182,6 +183,7 @@ export class ConsultarOrdenesComponent implements OnInit {
                this.validarFechas();
                this.tipoOrden();
                this.Histocambioorden();
+               this.stopProgress();
             });
       } else {
          alert('Debe proporcionar un número de orden válido.');
@@ -189,8 +191,8 @@ export class ConsultarOrdenesComponent implements OnInit {
    }
    Histocambioorden() {
       if (this.buscarOrden && this.numeroOrden) {
-         console.log('Buscando histo...');
-         console.log('Número de orden con histo:', this.numeroOrden);
+         // console.log('Buscando histo...');
+         // console.log('Número de orden con histo:', this.numeroOrden);
          this.apiService
             .callStoreProcedureV2(
                RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.HistocambiosOrden, [
@@ -198,7 +200,7 @@ export class ConsultarOrdenesComponent implements OnInit {
                ])
             )
             .subscribe((response) => {
-               console.log('Respuesta del procedimiento histocambioorden:', response);
+               // console.log('Respuesta del procedimiento histocambioorden:', response);
    
                // Parsear la respuesta JSON
                try {
@@ -333,7 +335,7 @@ export class ConsultarOrdenesComponent implements OnInit {
    }
 
    getOrdenInfo(orderSelected: string) {
-      // Construye los parámetros para el procedimiento almacenado
+      this.startProgress();
       const params = [
          new InputParameter('una_orden', orderSelected) // Asegúrate de que el tipo de dato sea el correcto
       ];
@@ -398,6 +400,7 @@ export class ConsultarOrdenesComponent implements OnInit {
             this.tipoOrden();
             // this.getOrderTags();
             this.validarFechas();
+            this.stopProgress();
          });
    }
 
@@ -572,5 +575,16 @@ export class ConsultarOrdenesComponent implements OnInit {
       this.fechaFinEje = null;
       this.codigoerror = null;
       this.descripcionerror = null;
+   }
+   private startProgress(): void {
+      if (this.jqxLoader) {
+         this.jqxLoader.open();
+      }
+   }
+
+   private stopProgress(): void {
+      if (this.jqxLoader) {
+         this.jqxLoader.close();
+      }
    }
 }
