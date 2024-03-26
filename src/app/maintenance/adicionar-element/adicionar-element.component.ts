@@ -16,13 +16,15 @@ import { InputParameter } from '../../api/request/input-parameter';
 export class AdicionarElementComponent implements OnInit {
    informacionCargadaEnTabla: boolean = false;
    selectedFeatures: any[] = [];
-   resultOrders: Array<any>;
+   resultOrders: any[] = [];
    orderSelected: any;
    user: any;
    perfil: any;
    checkLegalized = 0;
    departamento: any;
    closeFunction: Function;
+
+   numeroOrdenSeleccionado: any;
 
 
    selectedValue: any;
@@ -35,7 +37,7 @@ export class AdicionarElementComponent implements OnInit {
    ngOnInit() {
       // Suscribirse al observable del servicio DataSharingService
       this.dataSharingService.getSelectedFeaturesObservable().subscribe((features) => {
-         console.log('Datos seleccionados actualizados en otro componente:', features);
+         // console.log('Datos seleccionados actualizados en otro componente:', features);
 
          // Verificar si hay características seleccionadas
          if (features.length > 0) {
@@ -46,9 +48,9 @@ export class AdicionarElementComponent implements OnInit {
             const localidad = firstFeature.attributes.LOCALIDAD;
 
             // Hacer algo con estos valores, si es necesario
-            console.log('TAG:', tag);
-            console.log('DEPARTAMENTO:', departamento);
-            console.log('LOCALIDAD:', localidad);
+            // console.log('TAG:', tag);
+            // console.log('DEPARTAMENTO:', departamento);
+            // console.log('LOCALIDAD:', localidad);
 
             // Guardar los features para su uso posterior si es necesario
             this.selectedFeatures = features;
@@ -91,7 +93,7 @@ export class AdicionarElementComponent implements OnInit {
       this.dataSharingService.getSelectedSelectValue().subscribe((value) => {
          // Recibir el valor de un elemento
          if (value.toString() === '46') {
-            this.selectedValue = 'TuberiaP80';
+            this.selectedValue = 'TUBERIAP80';
          } else {
             this.selectedValue = value;
          }
@@ -101,7 +103,7 @@ export class AdicionarElementComponent implements OnInit {
 
    private setUser() {
       this.user = this.memoryService.getItem('currentUser');
-      console.log(this.user);
+      // console.log(this.user);
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerPerfilUsuario, [
@@ -121,26 +123,24 @@ export class AdicionarElementComponent implements OnInit {
          this.informacionCargadaEnTabla = false;
          return;
       }
+      const elemento = this.selectedValue;
+      const usuario = this.user;
+
+      // console.log('este es el elemento',elemento);
+      // console.log('este es el usuario',usuario);
+
+      
    
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(
                StoreProcedures.ObtenerElementosParaAgregar,
                [
-                  new InputParameter('un_elemento', this.selectedValue),
-                  new InputParameter('un_usuario', this.user),
+                  new InputParameter('un_elemento', elemento),
+                  new InputParameter('un_usuario', usuario),
                   new InputParameter('un_equipo', 0),
-                  new InputParameter(
-                     'un_departamento',
-                     this.departamento
-                  ),
-                  new InputParameter(
-                     'una_localidad',
-                     this.selectedFeatures[0].attributes.LOCALIDAD
-                  ),
                   new InputParameter('un_codigoerror', 0),
                   new InputParameter('un_msgerror', 0),
-                  new InputParameter('un_Resultado', 0)
                ]
             )
          )
@@ -151,8 +151,8 @@ export class AdicionarElementComponent implements OnInit {
                return;
             }
    
-            console.log('Respuesta del procedimiento almacenado:', json);
-            // this.getOrders();
+            // console.log('Respuesta del procedimiento almacenado:', json);
+            this.getOrders();
          });
    }
    
@@ -166,70 +166,85 @@ export class AdicionarElementComponent implements OnInit {
                [
                   new InputParameter('un_departameneto', this.departamento),
                   new InputParameter('una_localidad', this.selectedFeatures[0].attributes.LOCALIDAD),
-                  new InputParameter('un_tipoelemento', this.selectedValue),
-                  new InputParameter('un_Resultado', 0),
+                  new InputParameter('un_tipoelemento', this.selectedValue)
                ]
             )
          )
          .subscribe((json) => {
-            console.log('Respuesta del procedimiento almacenado:', json);
+            // console.log('Respuesta del procedimiento almacenado getOrders:', json);
             if (json[3] != null) {
-               const response = JSON.parse(json[3]);
-               if (response['Table1'].length === 0) {
-                  this.loadResultadoOrdenesCompleted(response['Table1']);
-               }
+               const orders = JSON.parse(json['3'])['Table1']; 
+               if (orders && orders.length > 0) {
+                  this.loadResultadoOrdenesCompleted(orders);
+                } else {
+                  alert('No se encontraron órdenes.');
+                }
             }
          });
    }
 
-   loadResultadoOrdenesCompleted(json: any) {
-      if (json['Table1'] != null) {
-         this.resultOrders = json['Table1'];
-      }
+   loadResultadoOrdenesCompleted(orders: any[]) {
+      // console.log('Respuesta completa:', orders);
+      this.resultOrders = orders.map((order) => {
+        return {
+          label: `${order.NUMEROORDEN} - ${order['TIPO MANTENIMIENTO']}`,
+          value: order.NUMEROORDEN
+        };
+      });
+    }
+    
+
+onOrderSelected() {
+  console.log('Número de orden seleccionado:', this.numeroOrdenSeleccionado);
+  // Puedes utilizar this.numeroOrdenSeleccionado en tu lógica para obtener el número de orden seleccionado.
+}
+
+    
+    
+agregarElementos() {
+   if (!this.selectedValue || !this.numeroOrdenSeleccionado) {
+     alert('Debe seleccionar un número de orden.');
+     return;
    }
-   agregarElementos() {
-      if (!this.selectedValue || !this.orderSelected) {
-         alert('Debe seleccionar un número de orden.');
-         return;
+ 
+   const un_departamento = this.departamento;
+   const una_localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
+   const tag = this.selectedFeatures[0].attributes.TAG;
+   const un_tipoelemento = this.selectedValue;
+   const un_una_orden = this.numeroOrdenSeleccionado;
+ 
+   this.apiService
+     .callStoreProcedureV2(
+       RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.AgregarElementosOrden, [
+         new InputParameter('un_departamento', un_departamento),
+         new InputParameter('una_localidad', una_localidad),
+         new InputParameter('un_una_orden', un_una_orden),
+         new InputParameter('un_tipoelemento', un_tipoelemento),
+         new InputParameter('unos_tags', tag),
+         new InputParameter('un_codigoerror', 0), 
+         new InputParameter('un_msgerror', 0) 
+       ])
+     )
+     .subscribe((json) => {
+      // console.log('respuesta del servidor agregar elemento', json);
+   
+      const codigoError = json[5]; // Obtener el código de error
+      const msgError = json[6]; // Obtener el mensaje de error
+   
+      if (codigoError !== "0") {
+         // Mostrar mensaje de error si lo deseas
+         alert('Error: ' + msgError);
+      } else {
+         // Mostrar mensaje de éxito si lo deseas
+         alert('Elementos agregados correctamente!');
+         this.closeFunction();
+         this.ClearData();
       }
+   });
+ }
+ ClearData(){
+   this.numeroOrdenSeleccionado = null;
+   this.selectedFeatures = null;
+ }
 
-      console.log('selectedValue:', this.selectedValue);
-      const un_departamento = this.departamento;
-      const una_localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
-      const tag = this.selectedFeatures[0].attributes.TAG;
-      const un_tipoelemento = this.selectedValue;
-      const un_una_orden = this.orderSelected.ORDEN;
-
-      console.log('Valor de un_elemento:', un_departamento);
-      console.log('Valor de un_elemento:', una_localidad);
-      console.log('Valor de un_elemento:', tag);
-      console.log('Valor de un_tipoelemento:', un_tipoelemento);
-      console.log('Valor de un_una_Orden', un_una_orden);
-
-      this.apiService
-         .callStoreProcedureV2(
-            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.AgregarElementosOrden, [
-               new InputParameter('un_departamento', un_departamento),
-               new InputParameter('una_localidad', una_localidad),
-               new InputParameter('un_una_orden', un_una_orden),
-               new InputParameter('un_tipoelemento', un_tipoelemento),
-               new InputParameter('tag', tag),
-               new InputParameter('un_codigoerror', 0), // Parámetro de salida para código de error
-               new InputParameter('un_msgerror', 0) // Parámetro de salida para mensaje de error
-            ])
-         )
-         .subscribe((json) => {
-            // Manejar la respuesta del procedimiento almacenado, si es necesario
-            const codigoError = json['6']; // Obtener el código de error
-            const msgError = json['7']; // Obtener el mensaje de error
-            if (codigoError !== 0) {
-               // Mostrar mensaje de error si lo deseas
-               alert('Error: ' + msgError);
-            } else {
-               // Mostrar mensaje de éxito si lo deseas
-               alert('Elementos agregados correctamente!');
-               this.closeFunction();
-            }
-         });
-   }
 }

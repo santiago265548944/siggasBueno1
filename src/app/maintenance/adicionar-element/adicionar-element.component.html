@@ -2,16 +2,17 @@
    <div class="row-1">
       <div class="row-1-col1">
          <label for="order_number" class="row1-label">Numero de Orden:</label>
-         <select
-            class="row1-select"
-            [(ngModel)]="orderSelected"
-            [disabled]="!informacionCargadaEnTabla || !selectedValue"
-         >
-            <option *ngFor="let resultItem of resultOrders" [ngValue]="resultItem">
-               {{ resultItem.ORDEN }} - {{ resultItem['TIPO MANTENIMIENTO'] }}
+         <select class="row1-select" [(ngModel)]="numeroOrdenSeleccionado" (change)="onOrderSelected()">
+            <option *ngFor="let order of resultOrders" [value]="order.value">
+              {{ order.label }}
             </option>
-         </select>
-      </div>
+          </select>
+          
+          
+          
+          
+       </div>
+       
 
       <div class="row-1-col2">
          <button (click)="agregarElementos()">Agregar</button>

@@ -36,6 +36,7 @@ export class GenerarCorrectComponent implements OnInit {
    selectedActividadOSF: any;
    activity: Array<any>;
    tipoactivity: Array<any>;
+   activityOsf: Array<any>;
    user: any;
    perfil: any;
    buscarTipo: any;
@@ -97,8 +98,9 @@ export class GenerarCorrectComponent implements OnInit {
             this.informacionCargadaEnTabla = true;
 
             // Cargar datos en los selects
-            this.loadDropDownTipoActivity();
-            this.loadDropDownActivity();
+            this.setUser();
+            this.getActivityTypes();
+
 
              // Convertir el código de departamento a su nombre correspondiente
       switch (departamento) {
@@ -185,8 +187,21 @@ export class GenerarCorrectComponent implements OnInit {
          this.selectedTipoActividad = null;
       }
    }
+   private setUser() {
+      this.user = this.memoryService.getItem('currentUser');
+      console.log(this.user);
+      this.apiService
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerPerfilUsuario, [
+               new InputParameter('un_id', this.user)
+            ])
+         )
+         .subscribe((json) => {
+            this.perfil = JSON.parse(json['1']);
+         });
+   }
 
-   private loadDropDownTipoActivity(): void {
+   private getActivityTypes(): void {
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerTiposdeActividad, [])
@@ -195,33 +210,69 @@ export class GenerarCorrectComponent implements OnInit {
             if (json[0] != null) {
                this.loadDropDownTipoActivityCompleted(JSON.parse(json[0]));
             }
+            this.activityTypeLookUpEdit();
+
          });
    }
 
    private loadDropDownTipoActivityCompleted(json: any): void {
+      
       if (json['Table1'] != null) {
          this.tipoactivity = json['Table1'];
       }
    }
+ 
 
-   private loadDropDownActivity(): void {
+   private activityTypeLookUpEdit(): void {
+
+      const tipoactividad = this.selectedTipoActividad.CODIGO;
+
+      // console.log('valor tipoactividad', tipoactividad);
+      
       this.apiService
          .callStoreProcedureV2(
-            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerActividades, [
-               new InputParameter('un_tipo', this.selectedTipoActividad),
-               new InputParameter('un_usario', this.user)
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerCorrectivosPorTipo, [
+               new InputParameter('un_tipo', tipoactividad),
             ])
          )
          .subscribe((json) => {
-            if (json[0] != null) {
-               this.loadDropDownActivityCompleted(JSON.parse(json[0]));
+            // console.log('actividad', json);
+            
+            if (json[1] != null) {
+               this.loadDropDownActivityCompleted(JSON.parse(json[1]));
             }
+            this.activityLookUpEdit();
          });
    }
 
    private loadDropDownActivityCompleted(json: any): void {
       if (json['Table1'] != null) {
          this.activity = json['Table1'];
+      }
+   }
+   private activityLookUpEdit(): void {
+      const ACTIVDAD = this.selectedActividad.OSFTIPOTRABAJO;
+  
+      // console.log('VALOR ACTIVIDAD', ACTIVDAD);
+  
+      this.apiService
+          .callStoreProcedureV2(
+              RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerActividadPpalPorTrabajo, [
+                  new InputParameter('un_tipotrabajo', ACTIVDAD),
+              ])
+          )
+          .subscribe((json) => {
+            //   console.log('actividad osf', json);
+  
+              if (json[1] != null) {
+                  this.loadDropDownActivityOsd(JSON.parse(json[1]));
+              }
+          });
+  }
+  
+   private loadDropDownActivityOsd(json: any): void{
+      if (json['Table1'] != null) {
+         this.activityOsf = json['Table1'];
       }
    }
 
@@ -241,19 +292,20 @@ export class GenerarCorrectComponent implements OnInit {
       if (!this.validarFormulario()) {
          return;
       }
-      if (this.selectedActividad) {
+      if (this.selectedActividadOSF) {
          if (this.observacion !== null) {
             this.observacion += '\n';
          } else {
             this.observacion = '';
          }
-         this.observacion += this.selectedActividad.DESCRIPCION;
+         this.observacion += this.selectedActividadOSF.DESCRIPCION;
       }
    }
 
    Remover() {
       // Limpiar variables y arrays
       this.selectedActividad = null;
+      this.selectedActividadOSF = null;
       this.selectedTipoActividad = null;
       this.observacion = '';
       this.observable = '';
@@ -268,7 +320,7 @@ export class GenerarCorrectComponent implements OnInit {
       const confirmacion = confirm('¿Estás seguro de que deseas cancelar?');
 
       if (confirmacion) {
-         this.selectedActividad = '';
+         this.selectedActividadOSF = '';
          this.selectedTipoActividad = '';
          this.closeFunction();
       }
@@ -353,7 +405,6 @@ export class GenerarCorrectComponent implements OnInit {
       return true;
    }
    generarOrden() {
-      // Verificar si hay elementos seleccionados
       if (
          !this.selectedActividad ||
          !this.selectedTipoActividad ||
@@ -363,14 +414,14 @@ export class GenerarCorrectComponent implements OnInit {
          alert('Por favor seleccione todos los elementos necesarios para generar la orden.');
          return;
       }
-      const actividadgis = this.selectedActividad.CODIGO;
-      const actividad = this.selectedTipoActividad.PORCENTAJE;
+      const actividadgis = this.selectedTipoActividad.CODIGO;
+      const actividad = this.selectedActividad.COD_ACTIVIDAD_ODF;
       const abservacion = this.observable;
       const elemento = this.selectedValue;
-      const tags = this.selectedFeatures[0].attributes.TAG;
+      const tags = this.selectedFeatures[0].attributes.TAG.toString();
       const departamento = this.departamento;
       const localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
-      const guid = uuidv4();
+      const guid = uuidv4().toString();
 
       console.log('UN_GUID:', guid);
       console.log('una_actividad_gis:', actividadgis);
@@ -396,7 +447,7 @@ export class GenerarCorrectComponent implements OnInit {
             new InputParameter('un_departamento', departamento),
             new InputParameter('una_localidad', localidad),
             new InputParameter('un_guid', guid),
-            new InputParameter('un_addressid', null),
+            new InputParameter('un_addressid', 0),
         ])
     )
          .subscribe((response) => {
@@ -410,6 +461,10 @@ export class GenerarCorrectComponent implements OnInit {
                   const ordenId = result.ionuorderid;
                   if (ordenId != null) {
                      alert(`Orden generada exitosamente. Número de orden: ${ordenId}`);
+                     this.insertOrderTag();
+                     
+               this.closeFunction();
+
                   } else {
                      alert('La orden no pudo ser generada correctamente.');
                   }
@@ -426,4 +481,50 @@ export class GenerarCorrectComponent implements OnInit {
    // onSelectChange(event: any): void {
    //    this.dataSharingService.setSelectChangeFunction(event);
    // }
+   private insertOrderTag(): void {
+      
+      const guid = uuidv4().toString();
+      const actividad = this.selectedActividad.COD_ACTIVIDAD_ODF;
+      const elemento = this.selectedValue;
+      const subtipo = this.selectedValue.suptipoelemento;
+      const tag = this.selectedFeatures[0].attributes.TAG.toString();
+      const departamento = this.departamento;
+      const localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
+
+      
+      this.apiService
+          .callStoreProcedureV2(
+              RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.LOGInsertarOrdenTag, [
+                  new InputParameter('uudi', guid),
+                  new InputParameter('un_tag', tag),
+                  new InputParameter('un_elemento', elemento),
+                  new InputParameter('un_subtipo', subtipo),
+                  new InputParameter('un_departamento', departamento),
+                  new InputParameter('una_localidad', localidad),
+                  new InputParameter('una_actividadgis', actividad)
+              ])
+          )
+          .subscribe((json) => {
+              console.log(' insertaordertag', json);
+  
+              if (json[1] != null) {
+                  // Aquí puedes realizar alguna acción adicional si lo necesitas
+              }
+          });
+  }
+  
+   private textEdit1 (): void {
+      this.apiService
+          .callStoreProcedureV2(
+              RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.seleccionarIDaddres, [
+                 
+              ])
+          )
+          .subscribe((json) => {
+            //   console.log('actividad osf', json);
+  
+              if (json[1] != null) {
+              }
+          });
+   }
 }
