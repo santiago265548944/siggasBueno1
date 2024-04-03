@@ -20,7 +20,6 @@ import { jqxTabsComponent } from 'jqwidgets-scripts/jqwidgets-ts/angular_jqxtabs
 import { InputParameter } from '../../api/request/input-parameter';
 import { v4 as uuidv4 } from 'uuid';
 
-
 @Component({
    selector: 'app-generar-correct',
    templateUrl: './generar-correct.component.html',
@@ -56,7 +55,6 @@ export class GenerarCorrectComponent implements OnInit {
    closeFunction: Function;
 
    asociarDireccion: boolean = false;
-   
 
    informacionCargadaEnTabla: boolean = false;
    // identidadPredio
@@ -101,30 +99,29 @@ export class GenerarCorrectComponent implements OnInit {
             // Cargar datos en los selects
             this.setUser();
             this.getActivityTypes();
-            this.textEdit1();
+            // this.textEdit1();
 
-
-             // Convertir el código de departamento a su nombre correspondiente
-      switch (departamento) {
-         case 5:
-            this.departamento = 'MAGDALENA';
-            break;
-         case 6:
-            this.departamento = 'CESAR';
-            break;
-         case 9:
-            this.departamento = 'BOLIVAR';
-            break;
-         case 2:
-            this.departamento = 'ATLANTICO';
-            break;
-         case 22:
-            this.departamento = 'HUECO';
-            break;
-         default:
-            this.departamento = 'Departamento Desconocido';
-            break;
-      }
+            // Convertir el código de departamento a su nombre correspondiente
+            switch (departamento) {
+               case 5:
+                  this.departamento = 'MAGDALENA';
+                  break;
+               case 6:
+                  this.departamento = 'CESAR';
+                  break;
+               case 9:
+                  this.departamento = 'BOLIVAR';
+                  break;
+               case 2:
+                  this.departamento = 'ATLANTICO';
+                  break;
+               case 22:
+                  this.departamento = 'HUECO';
+                  break;
+               default:
+                  this.departamento = 'Departamento Desconocido';
+                  break;
+            }
          } else {
             // Si no hay características seleccionadas, desactivar los formularios
             this.informacionCargadaEnTabla = false;
@@ -219,34 +216,31 @@ export class GenerarCorrectComponent implements OnInit {
    }
 
    private loadDropDownTipoActivityCompleted(json: any): void {
-      
       if (json['Table1'] != null) {
          this.tipoactivity = json['Table1'];
       }
    }
- 
 
-   private activityTypeLookUpEdit(): void {
+   public activityTypeLookUpEdit(): void {
       this.startProgress();
       const tipoactividad = this.selectedTipoActividad.CODIGO;
 
       // console.log('valor tipoactividad', tipoactividad);
-      
+
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerCorrectivosPorTipo, [
-               new InputParameter('un_tipo', tipoactividad),
+               new InputParameter('un_tipo', tipoactividad)
             ])
          )
          .subscribe((json) => {
             // console.log('actividad', json);
-            
+
             if (json[1] != null) {
                this.loadDropDownActivityCompleted(JSON.parse(json[1]));
             }
             this.activityLookUpEdit();
             this.stopProgress();
-
          });
    }
 
@@ -255,27 +249,28 @@ export class GenerarCorrectComponent implements OnInit {
          this.activity = json['Table1'];
       }
    }
-   private activityLookUpEdit(): void {
+   public activityLookUpEdit(): void {
       const ACTIVDAD = this.selectedActividad.OSFTIPOTRABAJO;
-  
+
       // console.log('VALOR ACTIVIDAD', ACTIVDAD);
-  
+
       this.apiService
-          .callStoreProcedureV2(
-              RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerActividadPpalPorTrabajo, [
-                  new InputParameter('un_tipotrabajo', ACTIVDAD),
-              ])
-          )
-          .subscribe((json) => {
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(
+               StoreProcedures.ObtenerActividadPpalPorTrabajo,
+               [new InputParameter('un_tipotrabajo', ACTIVDAD)]
+            )
+         )
+         .subscribe((json) => {
             //   console.log('actividad osf', json);
-  
-              if (json[1] != null) {
-                  this.loadDropDownActivityOsd(JSON.parse(json[1]));
-              }
-          });
-  }
-  
-   private loadDropDownActivityOsd(json: any): void{
+
+            if (json[1] != null) {
+               this.loadDropDownActivityOsd(JSON.parse(json[1]));
+            }
+         });
+   }
+
+   private loadDropDownActivityOsd(json: any): void {
       if (json['Table1'] != null) {
          this.activityOsf = json['Table1'];
       }
@@ -329,7 +324,6 @@ export class GenerarCorrectComponent implements OnInit {
          this.selectedTipoActividad = '';
          this.closeFunction();
       }
-      
    }
 
    // generarOrden() {
@@ -411,13 +405,13 @@ export class GenerarCorrectComponent implements OnInit {
    }
    generarOrden() {
       if (
-          !this.selectedActividad ||
-          !this.selectedTipoActividad ||
-          !this.selectedFeatures ||
-          !this.selectedValue
+         !this.selectedActividad ||
+         !this.selectedTipoActividad ||
+         !this.selectedFeatures ||
+         !this.selectedValue
       ) {
-          alert('Por favor seleccione todos los elementos necesarios para generar la orden.');
-          return;
+         alert('Por favor seleccione todos los elementos necesarios para generar la orden.');
+         return;
       }
       const actividadgis = this.selectedTipoActividad.CODIGO;
       const actividad = this.selectedActividad.COD_ACTIVIDAD_ODF;
@@ -427,75 +421,72 @@ export class GenerarCorrectComponent implements OnInit {
       const departamento = this.departamento;
       const localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
       const guid = uuidv4().toString();
-  
-      // console.log('UN_GUID:', guid);
-      // console.log('una_actividad_gis:', actividadgis);
-      // console.log('una_actividad:', actividad);
-      // console.log('tags:', tags);
-      // console.log('un_elemento:', elemento);
-      // console.log('una_observacion:', abservacion);
-      // console.log('un_departamento:', departamento);
-      // console.log('una_localidad:', localidad);
-  
+
+      console.log('UN_GUID:', guid);
+      console.log('una_actividad_gis:', actividadgis);
+      console.log('una_actividad:', actividad);
+      console.log('tags:', tags);
+      console.log('un_elemento:', elemento);
+      console.log('una_observacion:', abservacion);
+      console.log('un_departamento:', departamento);
+      console.log('una_localidad:', localidad);
+
       this.apiService
-          .callStoreProcedureV2(
-              RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.GenerarOrdenCorrectivo, [
-                  new InputParameter('una_Actividad_gis', actividadgis),
-                  new InputParameter('una_Actividad', actividad),
-                  new InputParameter('tags', tags),
-                  new InputParameter('un_elemento', elemento),
-                  new InputParameter('una_observacion', abservacion),
-                  new InputParameter('un_suscriptor', ''),
-                  new InputParameter('ionuorderid', ''),
-                  new InputParameter('onuerrorcode', ''),
-                  new InputParameter('osberrormessage', ''),
-                  new InputParameter('un_departamento', departamento),
-                  new InputParameter('una_localidad', localidad),
-                  new InputParameter('un_guid', guid),
-                  new InputParameter('un_addressid',0),
-              ])
-          )
-          .subscribe(
-              (response) => {
-                  console.log('respuesta del procedimiento ', response);
-                  if (response && response.length > 0) {
-                      const result = response[0];
-                      const errorCode = result['onuerrorcode'];
-                      const errorMessage = result.osbErrorMessage;
-  
-                      if (errorCode === 0) {
-                          const ordenId = result.ionuorderid;
-                          if (ordenId != null) {
-                              alert(`Orden generada exitosamente. Número de orden: ${ordenId}`);
-                              this.insertOrderTag();
-                              this.closeFunction();
-  
-                          } else {
-                              alert('La orden no pudo ser generada correctamente.');
-                          }
-                      } else {
-                          alert(`Error generando la orden: ${errorMessage}`);
-                      }
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.GenerarOrdenCorrectivo, [
+               new InputParameter('una_Actividad_gis', actividadgis),
+               new InputParameter('una_Actividad', actividad),
+               new InputParameter('tags', tags),
+               new InputParameter('un_elemento', elemento),
+               new InputParameter('una_observacion', abservacion),
+               new InputParameter('un_suscriptor', ''),
+               new InputParameter('ionuorderid', ''),
+               new InputParameter('onuerrorcode', ''),
+               new InputParameter('osberrormessage', ''),
+               new InputParameter('un_departamento', departamento),
+               new InputParameter('una_localidad', localidad),
+               new InputParameter('un_guid', guid),
+               new InputParameter('un_addressid', 0)
+            ])
+         )
+         .subscribe(
+            (response) => {
+               console.log('respuesta del procedimiento ', response);
+               if (response && response.length > 0) {
+                  const result = response[0];
+                  const errorCode = result['onuerrorcode'];
+                  const errorMessage = result.osbErrorMessage;
+
+                  if (errorCode === 0) {
+                     const ordenId = result.ionuorderid;
+                     if (ordenId != null) {
+                        alert(`Orden generada exitosamente. Número de orden: ${ordenId}`);
+                        this.insertOrderTag();
+                        this.closeFunction();
+                     } else {
+                        alert('La orden no pudo ser generada correctamente.');
+                     }
                   } else {
-                      alert('Error en la respuesta del servidor');
+                     alert(`Error generando la orden: ${errorMessage}`);
                   }
-                  this.startProgress();
-              },
-              (error) => {
-                  console.error('Error al llamar al procedimiento:', error);
-                  // Mostrar mensaje de error al usuario
-                  alert('Error al generar la orden. Por favor, inténtalo de nuevo.');
-                  this.startProgress();
-              }
-          );
-  }
-  
+               } else {
+                  alert('Error en la respuesta del servidor');
+               }
+               this.startProgress();
+            },
+            (error) => {
+               console.error('Error al llamar al procedimiento:', error);
+               // Mostrar mensaje de error al usuario
+               alert('Error al generar la orden. Por favor, inténtalo de nuevo.');
+               this.startProgress();
+            }
+         );
+   }
 
    // onSelectChange(event: any): void {
    //    this.dataSharingService.setSelectChangeFunction(event);
    // }
    private insertOrderTag(): void {
-      
       const guid = uuidv4().toString();
       const actividad = this.selectedActividad.COD_ACTIVIDAD_ODF;
       const elemento = this.selectedValue;
@@ -504,40 +495,39 @@ export class GenerarCorrectComponent implements OnInit {
       const departamento = this.departamento;
       const localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
 
-      
       this.apiService
-          .callStoreProcedureV2(
-              RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.LOGInsertarOrdenTag, [
-                  new InputParameter('uudi', guid),
-                  new InputParameter('un_tag', tag),
-                  new InputParameter('un_elemento', elemento),
-                  new InputParameter('un_subtipo', subtipo),
-                  new InputParameter('un_departamento', departamento),
-                  new InputParameter('una_localidad', localidad),
-                  new InputParameter('una_actividadgis', actividad)
-              ])
-          )
-          .subscribe((json) => {
-              console.log(' insertaordertag', json);
-  
-              if (json[1] != null) {
-                  // Aquí puedes realizar alguna acción adicional si lo necesitas
-              }
-          });
-  }
-  
-   private textEdit1 (): void {
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.LOGInsertarOrdenTag, [
+               new InputParameter('uudi', guid),
+               new InputParameter('un_tag', tag),
+               new InputParameter('un_elemento', elemento),
+               new InputParameter('un_subtipo', subtipo),
+               new InputParameter('un_departamento', departamento),
+               new InputParameter('una_localidad', localidad),
+               new InputParameter('una_actividadgis', actividad)
+            ])
+         )
+         .subscribe((json) => {
+            console.log(' insertaordertag', json);
+
+            if (json[1] != null) {
+               // Aquí puedes realizar alguna acción adicional si lo necesitas
+            }
+         });
+   }
+
+   private textEdit1(): void {
       const tags = this.selectedFeatures[0].attributes.TAG.toString();
 
       this.apiService
-          .callStoreProcedureV2(
-              RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.seleccionarIDaddres, [
-                 new InputParameter('un_tag', tags)
-              ])
-          )
-          .subscribe((json) => {
-              console.log('textedit', json);
-               alert(json[2])
-          });
+         .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.seleccionarIDaddres, [
+               new InputParameter('un_tag', tags)
+            ])
+         )
+         .subscribe((json) => {
+            console.log('textedit', json);
+            alert(json[2]);
+         });
    }
 }

@@ -35,7 +35,6 @@ export class ConsultarOrdenesComponent implements OnInit {
    sTasktype: any;
    causalExecute: Subscription;
 
-
    // variable para almacenar los datos de la consulta
    fechagen: any;
    fechaprog: any;
@@ -73,10 +72,11 @@ export class ConsultarOrdenesComponent implements OnInit {
    // Variable para almacenar el número de orden buscado
    numeroOrdenBuscada: string;
 
-      
-      constructor(private apiService: ApiService, private memoryService: MemoryService, private globals: GlobalService) {
-
-   }
+   constructor(
+      private apiService: ApiService,
+      private memoryService: MemoryService,
+      private globals: GlobalService
+   ) {}
 
    ngOnInit(): void {
       this.setUser();
@@ -201,17 +201,19 @@ export class ConsultarOrdenesComponent implements OnInit {
             )
             .subscribe((response) => {
                // console.log('Respuesta del procedimiento histocambioorden:', response);
-   
+
                // Parsear la respuesta JSON
                try {
                   const jsonResponse = JSON.parse(response[1]);
                   const historialCambios = jsonResponse.Table1;
-   
+
                   // Iterar sobre el array Table1 y agregar cada elemento a la lista
                   historialCambios.forEach((cambio) => {
                      // Verificar si el cambio ya existe en la lista
-                     const existe = this.listaHistorialCambios.some(item => item.IDCAMBIO === cambio.IDCAMBIO);
-   
+                     const existe = this.listaHistorialCambios.some(
+                        (item) => item.IDCAMBIO === cambio.IDCAMBIO
+                     );
+
                      // Si el cambio no existe en la lista, agregarlo
                      if (!existe) {
                         this.listaHistorialCambios.push({
@@ -236,34 +238,36 @@ export class ConsultarOrdenesComponent implements OnInit {
          alert('error.');
       }
    }
-   
 
    validarFechas() {
       // Verifica que las fechas no sean null ni undefined
-      if (this.fechaIniEje !== null && this.fechaFinEje !== null &&
-          this.fechaIniEje !== undefined && this.fechaFinEje !== undefined) {
-          // Verifica que las fechas no sean cadenas vacías
-          if (this.fechaIniEje.trim() !== '' && this.fechaFinEje.trim() !== '') {
-              // Formatea las fechas
-              const fechaEquipo = moment(this.fechaIniEje, 'DD-MMM-YY').format('YYYY-MM-DD');
-              const fechaEquipo1 = moment(this.fechaFinEje, 'DD-MMM-YY').format('YYYY-MM-DD');
-  
-              this.fechaInicio = fechaEquipo;
-              this.fechaFin = fechaEquipo1;
-              this.fechaVaidarTF = true;
-              this.FechasETF = true;
-              return; // Sale del método después de validar y formatear las fechas
-          }
+      if (
+         this.fechaIniEje !== null &&
+         this.fechaFinEje !== null &&
+         this.fechaIniEje !== undefined &&
+         this.fechaFinEje !== undefined
+      ) {
+         // Verifica que las fechas no sean cadenas vacías
+         if (this.fechaIniEje.trim() !== '' && this.fechaFinEje.trim() !== '') {
+            // Formatea las fechas
+            const fechaEquipo = moment(this.fechaIniEje, 'DD-MMM-YY').format('YYYY-MM-DD');
+            const fechaEquipo1 = moment(this.fechaFinEje, 'DD-MMM-YY').format('YYYY-MM-DD');
+
+            this.fechaInicio = fechaEquipo;
+            this.fechaFin = fechaEquipo1;
+            this.fechaVaidarTF = true;
+            this.FechasETF = true;
+            return; // Sale del método después de validar y formatear las fechas
+         }
       }
-      
+
       // Si alguna de las condiciones anteriores no se cumple, asigna null a las fechas
       this.fechaInicio = null;
       this.fechaFin = null;
       this.fechaVaidarTF = false;
       this.FechasETF = false;
-  }
-  
-    
+   }
+
    private setUser() {
       this.user = this.memoryService.getItem('currentUser');
       // console.log(this.user);
@@ -327,7 +331,7 @@ export class ConsultarOrdenesComponent implements OnInit {
          };
       });
    }
-   onSelectOrder(order: any) {
+   onSelectOrder() {
       // console.log('Orden seleccionada:', this.orderSelected);
 
       // Aquí puedes llamar a un método para obtener y mostrar la información relacionada con el número de orden seleccionado
@@ -411,7 +415,7 @@ export class ConsultarOrdenesComponent implements OnInit {
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerTagsCorrectivos, [
-               new InputParameter('una_orden', buscaNumeroOrden),
+               new InputParameter('una_orden', buscaNumeroOrden)
             ])
          )
          .subscribe((json) => {
