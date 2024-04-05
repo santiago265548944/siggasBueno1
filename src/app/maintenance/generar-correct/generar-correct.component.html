@@ -86,7 +86,7 @@
    <!-- ... (código HTML anterior) ... -->
 
    <div class="row-7-col1">
-      <input type="checkbox" [(ngModel)]="asociarDireccion" />
+      <input type="checkbox" id="capturarLayerIdCheckbox" (change)="capturarLayerIdOnChange($event)">
       <label class="row7-label">Asociar a Dirección</label>
 
       <input
@@ -107,7 +107,8 @@
    </div>
 
    <!-- ... (otras partes del HTML) ... -->
-   
+   <div *ngIf="showSpinner" class="spinner"></div>
+
 </div>
 <br />
 <div class="cuadro2">
@@ -121,7 +122,7 @@
             <div class="celda">Localidad</div>
          </div>
          <div class="fila" *ngFor="let feature of selectedFeatures">
-            <div class="celda"></div>
+            <div class="celda"><input type="checkbox"></div>
             <div class="celda">{{ selectedValue }}</div>
             <div class="celda">{{ feature ? feature.attributes.TAG : '' }}</div>
             <div class="celda">{{ departamento}}</div>

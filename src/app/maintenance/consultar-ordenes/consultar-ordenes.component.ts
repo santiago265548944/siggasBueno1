@@ -10,6 +10,7 @@ import { InputParameter } from '../../api/request/input-parameter';
 import * as moment from 'moment';
 import { GlobalService } from '../../Globals/global.service';
 
+
 @Component({
    selector: 'app-consultar-ordenes',
    templateUrl: './consultar-ordenes.component.html',
@@ -68,6 +69,7 @@ export class ConsultarOrdenesComponent implements OnInit {
    fechaInicio: any;
    FechasETF: boolean = false;
    fechaVaidarTF: boolean = false;
+   showSpinner: boolean = false;
 
    // Variable para almacenar el número de orden buscado
    numeroOrdenBuscada: string;
@@ -106,93 +108,118 @@ export class ConsultarOrdenesComponent implements OnInit {
    }
 
    buscarOrdenes(numeroOrden: string) {
-      this.startProgress();
       if (this.buscarOrden && this.numeroOrden) {
-         // console.log('Buscando orden...');
-         // console.log('Número de orden:', this.numeroOrden);
+          this.showSpinner = true;
+  
+          const params = [
+              new InputParameter('una_orden',this.numeroOrden),
+          ];
+  
+          this.apiService
+              .callStoreProcedureV2(
+                  RequestHelper.getParamsForStoredProcedureV2(
+                      StoreProcedures.ObtenerInfoOrdenConsult,
+                      params
+                  )
+              )
+              .subscribe((response) => {
+                  if (response && response[0] && response[0].ErrorMessage) {
+                      const errorMessage = JSON.parse(response[0].ErrorMessage).split(':')[1];
+                      console.error('Error en el servidor:', errorMessage);
+                      alert('Se ha producido un error. Detalles: ' + errorMessage);
+                      this.showSpinner = false;
+                      return;
+                  }
+  
+                  console.log('Respuesta del servidor:', response);
+                  const maxLength = 2000; // Tamaño máximo permitido
+for (let key in response) {
+    if (typeof response[key] === 'string' && response[key].length > maxLength) {
+        response[key] = response[key].substring(0, maxLength);
+    }
+}
 
-         // Construye los parámetros para el procedimiento almacenado
-         const params = [
-            new InputParameter('una_orden', this.numeroOrden) // Asegúrate de que el tipo de dato sea el correcto
-         ];
-
-         this.apiService
-            .callStoreProcedureV2(
-               RequestHelper.getParamsForStoredProcedureV2(
-                  StoreProcedures.ObtenerInfoOrdenConsult,
-                  params
-               )
-            )
-            .subscribe((response) => {
-               // console.log('Respuesta del servidor:', response);
-
-               this.fechagen = response[1];
-               this.fechaprog = response[2];
-               this.codactppal = response[3] + ' - ' + response[4];
-               this.codcuadrilla = response[5] + '-' + response[6];
-               this.codactgis = response[7] + ' - ' + response[4];
-               this.estado = response[9];
-               this.listap = response[10];
-               this.observacion = response[11];
-               this.estadolegal = response[12];
-               this.tipoOrdenCP = response[13];
-               this.tipotrabajo1 = response[14];
-               this.sTasktype = response[15];
-               this.ordenpadre = response[16];
-               this.tipoelemento = response[17];
-               this.fechaasig = response[18];
-               this.plano = response[19];
-               this.cuadrillaInter = response[20];
-               this.nomcuadrillaInter = response[21];
-               this.ubicacion = response[22];
-               this.sector = response[23];
-               this.fechaLegal = response[24];
-               this.fechaIniEje = response[25];
-               this.fechaFinEje = response[26];
-               this.codigoerror = response[27];
-               this.descripcionerror = response[28];
-               console.log(this.fechaLegal);
-
-               if (this.fechaLegal === 'null') {
-                  this.fechaLegal = '';
-               } else {
-                  this.fechaLegal;
-               }
-
-               // Cambiar el estado de la orden según el valor recibido
-               switch (response[9]) {
-                  case '0':
-                     this.estado = 'Registrada';
-                     break;
-                  case '5':
-                     this.estado = 'Asignada';
-                     break;
-                  case '6':
-                     this.estado = 'Inicio de ejecución';
-                     break;
-                  case '7':
-                     this.estado = 'Fin de Ejecución';
-                     break;
-                  case '8':
-                     this.estado = 'Legalizada';
-                     break;
-                  default:
-                     this.estado = 'Estado desconocido';
-                     break;
-               }
-               this.validarFechas();
-               this.tipoOrden();
-               this.Histocambioorden();
-               this.stopProgress();
-            });
+  
+                  // Validación y manejo del código de error
+                  if (this.codigoerror !== '0' && this.codigoerror !== '') {
+                     console.log('Se recibió un código de error diferente de 0:', this.codigoerror);
+                     alert('Se ha producido un error. Código de error: ' + this.codigoerror);
+                 
+                     this.showSpinner = false;
+                     return;
+                 }
+                 
+  
+                  // Asignaciones y operaciones solo si el código de error es '0'
+                  this.fechagen = response[1];
+                  this.fechaprog = response[2];
+                  this.codactppal = response[3] + ' - ' + response[4];
+                  this.codcuadrilla = response[5] + '-' + response[6];
+                  this.codactgis = response[7] + ' - ' + response[4];
+                  this.estado = response[9];
+                  this.listap = response[10];
+                  this.observacion = response[11];
+                  this.estadolegal = response[12];
+                  this.tipomantenimiento = response[13];
+                  this.tipotrabajo1 = response[14];
+                  this.tipotrabajo2 = response[15];
+                  this.ordenpadre = response[16];
+                  this.tipoelemento = response[17];
+                  this.fechaasig = response[18];
+                  this.plano = response[19];
+                  this.cuadrillaInter = response[20];
+                  this.nomcuadrillaInter = response[21];
+                  this.ubicacion = response[22];
+                  this.sector = response[23];
+                  this.fechaLegal = response[24];
+                  this.fechaIniEje = response[25];
+                  this.fechaFinEje = response[26];
+                  this.descripcionerror = response[28];
+  
+                  // Validar y asignar fechaLegal si es diferente de 'null'
+                  this.fechaLegal = (this.fechaLegal !== 'null') ? this.fechaLegal : '';
+  
+                  // Cambiar el estado de la orden según el valor recibido
+                  switch (response[9]) {
+                      case '0':
+                          this.estado = 'Registrada';
+                          break;
+                      case '5':
+                          this.estado = 'Asignada';
+                          break;
+                      case '6':
+                          this.estado = 'Inicio de ejecución';
+                          break;
+                      case '7':
+                          this.estado = 'Fin de Ejecución';
+                          break;
+                      case '8':
+                          this.estado = 'Legalizada';
+                          break;
+                      default:
+                          this.estado = 'Estado desconocido';
+                          break;
+                  }
+  
+                  this.validarFechas();
+                  this.tipoOrden();
+                  this.Histocambioorden();
+  
+                  this.showSpinner = false;
+              });
       } else {
-         alert('Debe proporcionar un número de orden válido.');
+          alert('Debe proporcionar un número de orden válido.');
       }
-   }
+  }
+  
+  
+  
    Histocambioorden() {
       if (this.buscarOrden && this.numeroOrden) {
+         this.showSpinner = true;
+
          // console.log('Buscando histo...');
-         // console.log('Número de orden con histo:', this.numeroOrden);
+         console.log('Número de orden con histo:', this.numeroOrden);
          this.apiService
             .callStoreProcedureV2(
                RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.HistocambiosOrden, [
@@ -200,7 +227,7 @@ export class ConsultarOrdenesComponent implements OnInit {
                ])
             )
             .subscribe((response) => {
-               // console.log('Respuesta del procedimiento histocambioorden:', response);
+               console.log('Respuesta del procedimiento histocambioorden:', response);
 
                // Parsear la respuesta JSON
                try {
@@ -226,8 +253,11 @@ export class ConsultarOrdenesComponent implements OnInit {
                            OSF_NUE: cambio.OSF_NUE,
                            GIS_ANT: cambio.GIS_ANT,
                            GIS_NUE: cambio.GIS_NUE
+
                         });
                      }
+         this.showSpinner = false;
+
                   });
                   // Realiza las acciones necesarias con la respuesta del procedimiento
                } catch (error) {
@@ -239,34 +269,27 @@ export class ConsultarOrdenesComponent implements OnInit {
       }
    }
 
+   
    validarFechas() {
-      // Verifica que las fechas no sean null ni undefined
-      if (
-         this.fechaIniEje !== null &&
-         this.fechaFinEje !== null &&
-         this.fechaIniEje !== undefined &&
-         this.fechaFinEje !== undefined
-      ) {
-         // Verifica que las fechas no sean cadenas vacías
-         if (this.fechaIniEje.trim() !== '' && this.fechaFinEje.trim() !== '') {
-            // Formatea las fechas
-            const fechaEquipo = moment(this.fechaIniEje, 'DD-MMM-YY').format('YYYY-MM-DD');
-            const fechaEquipo1 = moment(this.fechaFinEje, 'DD-MMM-YY').format('YYYY-MM-DD');
+   //    console.log('Validando fechas...');
+   // console.log('Fecha inicial:', this.fechaIniEje);
+   // console.log('Fecha final:', this.fechaFinEje);
+      if (this.fechaIniEje != '01-JAN-00' && this.fechaFinEje != '01-JAN-00') {
+         const fechaEquipo = moment(this.fechaIniEje).format('YYYY-MM-DD');
+         const fechaEquipo1 = moment(this.fechaFinEje).format('YYYY-MM-DD');
 
-            this.fechaInicio = fechaEquipo;
-            this.fechaFin = fechaEquipo1;
-            this.fechaVaidarTF = true;
-            this.FechasETF = true;
-            return; // Sale del método después de validar y formatear las fechas
-         }
+         this.fechaInicio = fechaEquipo;
+         this.fechaFin = fechaEquipo1;
+         this.fechaVaidarTF = true;
+         this.FechasETF = true;
+      } else {
+         this.fechaInicio = null;
+         this.fechaFin = null;
+         this.fechaVaidarTF = false;
+         this.FechasETF = false;
       }
-
-      // Si alguna de las condiciones anteriores no se cumple, asigna null a las fechas
-      this.fechaInicio = null;
-      this.fechaFin = null;
-      this.fechaVaidarTF = false;
-      this.FechasETF = false;
    }
+   
 
    private setUser() {
       this.user = this.memoryService.getItem('currentUser');
@@ -286,6 +309,8 @@ export class ConsultarOrdenesComponent implements OnInit {
    getOrders() {
       // console.log('Buscando tags...');
       if (this.buscarTag && this.numeroOrden) {
+         this.showSpinner = true;
+
          this.apiService
             .callStoreProcedureV2(
                RequestHelper.getParamsForStoredProcedureV2(
@@ -316,6 +341,8 @@ export class ConsultarOrdenesComponent implements OnInit {
                } else {
                   alert('No se encontraron órdenes.');
                }
+         this.showSpinner = false;
+
             });
       } else {
          console.log('La búsqueda de órdenes está desactivada.');
@@ -339,7 +366,7 @@ export class ConsultarOrdenesComponent implements OnInit {
    }
 
    getOrdenInfo(orderSelected: string) {
-      this.startProgress();
+
       const params = [
          new InputParameter('una_orden', orderSelected) // Asegúrate de que el tipo de dato sea el correcto
       ];
@@ -352,8 +379,19 @@ export class ConsultarOrdenesComponent implements OnInit {
             )
          )
          .subscribe((response) => {
-            // console.log('Respuesta del servidor:', response);
+            console.log('Respuesta del servidor:', response);
 
+            // Validación y manejo del código de error
+            this.codigoerror = response[27];
+            if (this.codigoerror !== '0') {
+                console.log('Se recibió un código de error diferente de 0:', this.codigoerror);
+                alert('Se ha producido un error. Código de error: ' + this.codigoerror);
+               
+                this.showSpinner = false;
+                return; 
+            }
+
+            // Asignaciones y operaciones solo si el código de error es '0'
             this.fechagen = response[1];
             this.fechaprog = response[2];
             this.codactppal = response[3] + ' - ' + response[4];
@@ -377,39 +415,45 @@ export class ConsultarOrdenesComponent implements OnInit {
             this.fechaLegal = response[24];
             this.fechaIniEje = response[25];
             this.fechaFinEje = response[26];
-            this.codigoerror = response[27];
-            this.descripcionerror = response[28];
+            
+            // Validar y asignar fechaLegal si es diferente de 'null'
+            this.fechaLegal = (this.fechaLegal !== 'null') ? this.fechaLegal : '';
 
-            // Cambiar el estado de la orden segun el valor recibido
+            // Cambiar el estado de la orden según el valor recibido
             switch (response[9]) {
-               case '0':
-                  this.estado = 'Registrada';
-                  break;
-               case '5':
-                  this.estado = 'Asignada';
-                  break;
-               case '6':
-                  this.estado = 'Inicio de ejecución';
-                  break;
-               case '7':
-                  this.estado = 'Fin de Ejecución';
-                  break;
-               case '8':
-                  this.estado = 'Legalizada';
-                  break;
-               default:
-                  this.estado = 'Estado desconocido';
-                  break;
+                case '0':
+                    this.estado = 'Registrada';
+                    break;
+                case '5':
+                    this.estado = 'Asignada';
+                    break;
+                case '6':
+                    this.estado = 'Inicio de ejecución';
+                    break;
+                case '7':
+                    this.estado = 'Fin de Ejecución';
+                    break;
+                case '8':
+                    this.estado = 'Legalizada';
+                    break;
+                default:
+                    this.estado = 'Estado desconocido';
+                    break;
             }
-            this.tipoOrden();
-            // this.getOrderTags();
+
             this.validarFechas();
-            this.stopProgress();
-         });
+            this.tipoOrden();
+            this.Histocambioorden();
+
+            this.showSpinner = false;
+        });
+
    }
 
    // Dependiendo de la orden, trae los tags que se mostrarán en la tabla elementos.
    getOrderTags() {
+      this.showSpinner = true;
+
       let buscaNumeroOrden = this.buscarOrden ? this.numeroOrden : this.orderSelected;
 
       this.apiService
@@ -431,6 +475,8 @@ export class ConsultarOrdenesComponent implements OnInit {
             } else {
                console.error('Respuesta del servidor vacía o no válida:', json);
             }
+            this.showSpinner = false;
+
          });
    }
 

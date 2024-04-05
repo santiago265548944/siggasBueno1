@@ -106,6 +106,8 @@
                   </div>
                </div>
             </div>
+<div *ngIf="showSpinner" class="spinner"></div>
+
          </div>
       </div>
    </div>
@@ -215,6 +217,8 @@
          />
       </div>
    </div>
+<div *ngIf="showSpinner" class="spinner"></div>
+
 </div>
 <jqxExpander [width]="'100%'" [expanded]="false">
    <p>Preventivo</p>
@@ -288,3 +292,6 @@
       </div>
    </div>
 </jqxExpander>
+
+
+ 

@@ -53,8 +53,12 @@ export class GenerarCorrectComponent implements OnInit {
    lastOrderId: number = 0;
    departamento: any;
    closeFunction: Function;
+   selectedId: string;
+   resultCorrItems: any;
 
    asociarDireccion: boolean = false;
+   capturarLayerId: boolean = false;
+   showSpinner: boolean = false;
 
    informacionCargadaEnTabla: boolean = false;
    // identidadPredio
@@ -64,6 +68,7 @@ export class GenerarCorrectComponent implements OnInit {
    selectedFeatures: any[] = [];
 
    selectedValue: any;
+   multiple: string;
 
    constructor(
       private apiService: ApiService,
@@ -96,9 +101,11 @@ export class GenerarCorrectComponent implements OnInit {
             // Activar los formularios
             this.informacionCargadaEnTabla = true;
 
-            // Cargar datos en los selects
             this.setUser();
             this.getActivityTypes();
+            this.getCorrectiveTags();
+            this.getSystemInfo();
+            
             // this.textEdit1();
 
             // Convertir el código de departamento a su nombre correspondiente
@@ -128,9 +135,13 @@ export class GenerarCorrectComponent implements OnInit {
          }
       });
       this.dataSharingService.getSelectedSelectValue().subscribe((value) => {
+         // console.log('este es el ID ', value);
+
+         this.selectedId = value.toString();
          // Recibir y asignar el valor del select
          if (value.toString() === '46') {
             this.selectedValue = 'TUBERIAP80';
+
          } else {
             this.selectedValue = value;
          }
@@ -146,19 +157,24 @@ export class GenerarCorrectComponent implements OnInit {
       });
    }
 
-   // Puedes definir métodos adicionales según sea necesario
    private procesarInformacionCapturada() {
       // Realiza acciones adicionales con la información capturada
       console.log('Información capturada:', this.capturedInformation);
-
+   
       // Ejemplo: Acceder a la etiqueta del primer elemento del array
       if (this.capturedInformation && this.capturedInformation.length > 0) {
          const etiquetaValue = this.capturedInformation[0].feature.attributes.OBJECTID;
          const etiquetaDIRECCION = this.capturedInformation[0].feature.attributes.DIRECCION;
-
-         console.log('Valor de ETIQUETA:', etiquetaValue, etiquetaDIRECCION);
+         const layerId = this.capturedInformation[0].feature.attributes.OBJECTID;
+   
+         console.log('Valor de ETIQUETA:', etiquetaValue, etiquetaDIRECCION, layerId);
       }
    }
+   capturarLayerIdOnChange(event: any): void {
+      this.capturarLayerId = event.target.checked;
+   }
+   
+   
    private actualizarInformacionCuadro(selectedFeatures: any[]): void {
       // Actualizar la información en el cuadro con los features seleccionados
       this.selectedFeatures = selectedFeatures;
@@ -222,8 +238,9 @@ export class GenerarCorrectComponent implements OnInit {
    }
 
    public activityTypeLookUpEdit(): void {
-      this.startProgress();
+      
       const tipoactividad = this.selectedTipoActividad.CODIGO;
+      this.showSpinner = true;
 
       // console.log('valor tipoactividad', tipoactividad);
 
@@ -240,7 +257,9 @@ export class GenerarCorrectComponent implements OnInit {
                this.loadDropDownActivityCompleted(JSON.parse(json[1]));
             }
             this.activityLookUpEdit();
-            this.stopProgress();
+
+            this.showSpinner = false;
+
          });
    }
 
@@ -249,8 +268,98 @@ export class GenerarCorrectComponent implements OnInit {
          this.activity = json['Table1'];
       }
    }
+
+   getSystemInfo(): void {
+      const osName = this.getOperatingSystem();
+      const browserName = this.getBrowserName();
+  
+      // console.log('Nombre del sistema operativo:', osName + browserName);
+      // console.log('Nombre del navegador:', browserName);
+  }
+  
+  getOperatingSystem(): string {
+      const userAgent = window.navigator.userAgent;
+      let osName = 'Desconocido';
+  
+      if (userAgent.indexOf('Win') !== -1) {
+          osName = 'Windows';
+      } else if (userAgent.indexOf('Mac') !== -1) {
+          osName = 'MacOS';
+      } else if (userAgent.indexOf('X11') !== -1) {
+          osName = 'UNIX';
+      } else if (userAgent.indexOf('Linux') !== -1) {
+          osName = 'Linux';
+      }
+  
+      return osName;
+  }
+  
+  getBrowserName(): string {
+      const userAgent = window.navigator.userAgent;
+      let browserName = 'Desconocido';
+  
+      if (userAgent.indexOf('Firefox') !== -1) {
+          browserName = 'Firefox';
+      } else if (userAgent.indexOf('Edg') !== -1) {
+          browserName = 'Edge';
+      } else if (userAgent.indexOf('Chrome') !== -1) {
+          browserName = 'Chrome';
+      } else if (userAgent.indexOf('Safari') !== -1) {
+          browserName = 'Safari';
+      } else if (userAgent.indexOf('MSIE') !== -1 || userAgent.indexOf('Trident/') !== -1) {
+          browserName = 'Internet Explorer';
+      }
+  
+      return browserName;
+  }
+  
+
+   private getCorrectiveTags():void{
+   
+      const elemento = String(this.selectedValue);
+      const user = this.memoryService.getItem('currentUser');
+      const osName = this.getOperatingSystem() + this.getBrowserName();
+      
+      console.log("Nombre del sistema operativo: " + osName);
+      console.log('elemento getcorrective', elemento);
+      console.log('usuario selecionado', user);
+      
+         this.apiService
+            .callStoreProcedureV2
+               (RequestHelper.getParamsForStoredProcedureV2(
+                  StoreProcedures.ObtenerTagsCorrectivo,[
+                     new InputParameter('un_elemento', elemento),
+                     new InputParameter('un_usuario', user),
+                     new InputParameter('un_equipo', osName)
+
+                  ]
+                  )
+               ).subscribe((json)=>{
+                  console.log('respuesta del elemento',json);
+                  
+                  if (json && json[3]) {
+                     try {
+                        const jsonResponse = JSON.parse(json[3]);
+                        this.getCorrItemsCompleted(jsonResponse);
+                     } catch (error) {
+                        console.error('Error al parsear JSON:', error);
+                     }
+                  } else {
+                     console.error('Respuesta del servidor vacía o no válida:', json);
+                  }
+               });
+         }
+      
+         getCorrItemsCompleted(jsonTable: any) {
+            if (jsonTable && jsonTable.Table1 && Array.isArray(jsonTable.Table1)) {
+               this.resultCorrItems = jsonTable.Table1;
+            } else {
+               console.error('La respuesta JSON no contiene un array "Table1" válido:', jsonTable);
+            }
+         }
    public activityLookUpEdit(): void {
       const ACTIVDAD = this.selectedActividad.OSFTIPOTRABAJO;
+      this.showSpinner = true;
 
       // console.log('VALOR ACTIVIDAD', ACTIVDAD);
 
@@ -267,6 +376,8 @@ export class GenerarCorrectComponent implements OnInit {
             if (json[1] != null) {
                this.loadDropDownActivityOsd(JSON.parse(json[1]));
             }
+         this.showSpinner = false;
+
          });
    }
 
@@ -326,76 +437,6 @@ export class GenerarCorrectComponent implements OnInit {
       }
    }
 
-   // generarOrden() {
-   //    if (typeof localStorage === 'undefined') {
-   //       alert('El almacenamiento local no está disponible en este navegador.');
-   //       return;
-   //    }
-
-   //    const actividadSeleccionada = this.selectedActividad
-   //       ? this.selectedActividad.DESCRIPCION
-   //       : '';
-   //    const observable = String(this.observable);
-
-   //    if (!actividadSeleccionada || !observable) {
-   //       alert('Debes completar los campos.');
-   //       return;
-   //    }
-
-   //    const ordenGenerada = this.generarNumeroOrden().toString();
-
-   //    this.lastOrderId++;
-   //    const currentDate = new Date();
-   //    const dateString = currentDate.toLocaleDateString();
-
-   //    const firstFeature = this.selectedFeatures[0];
-   //    const tag = firstFeature ? firstFeature.attributes.TAG : '';
-   //    const departamento = firstFeature ? firstFeature.attributes.DEPARTAMENTO : '';
-   //    const localidad = firstFeature ? firstFeature.attributes.LOCALIDAD : '';
-
-   //    if (tag && departamento && localidad) {
-   //       this.memoryService.setItem('tag', tag);
-   //       this.memoryService.setItem('departamento', departamento);
-   //       this.memoryService.setItem('localidad', localidad);
-   //    }
-
-   //    this.memoryService.setItem('actividadSeleccionada', actividadSeleccionada);
-   //    this.memoryService.setItem('observacion', observable);
-   //    this.memoryService.setItem('numeroOrden', ordenGenerada);
-   //    this.memoryService.setItem('estadoOrden', 'Registrada');
-
-   //    let ordenesRealizadas = JSON.parse(localStorage.getItem('ordenesRealizadas')) || [];
-
-   //    ordenesRealizadas.push({
-   //       id: this.lastOrderId,
-   //       numeroOrden: ordenGenerada,
-   //       actividad: actividadSeleccionada,
-   //       observacion: observable,
-   //       fecha: dateString,
-   //       estadoOrden: 'Registrada',
-   //       tag: tag,
-   //       departamento: departamento,
-   //       localidad: localidad
-   //    });
-
-   //    localStorage.setItem('ordenesRealizadas', JSON.stringify(ordenesRealizadas));
-
-   //    alert(`Orden generada: ${ordenGenerada}`);
-
-   //    this.selectedActividad = null;
-   //    this.selectedTipoActividad = null;
-   //    this.observacion = '';
-   //    this.observable = '';
-   //    this.selectedFeatures = [];
-   //    this.capturedInformation = [];
-
-   //    this.closed.emit();
-   // }
-
-   // generarNumeroOrden() {
-   //    const numeroOrden = Math.floor(100000 + Math.random() * 900000);
-   //    return numeroOrden;
-   // }
    private validarFormulario(): boolean {
       if (!this.observable || this.observable.trim() === '') {
          alert('El campo de OBSERVACIÓN es obligatorio.');
@@ -403,6 +444,8 @@ export class GenerarCorrectComponent implements OnInit {
       }
       return true;
    }
+
+   
    generarOrden() {
       if (
          !this.selectedActividad ||
@@ -413,14 +456,27 @@ export class GenerarCorrectComponent implements OnInit {
          alert('Por favor seleccione todos los elementos necesarios para generar la orden.');
          return;
       }
-      const actividadgis = this.selectedTipoActividad.CODIGO;
-      const actividad = this.selectedActividad.COD_ACTIVIDAD_ODF;
-      const abservacion = this.observable;
-      const elemento = this.selectedValue;
-      const tags = this.selectedFeatures[0].attributes.TAG.toString();
-      const departamento = this.departamento;
-      const localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
-      const guid = uuidv4().toString();
+      // this.ValidarElementoSitieneOrden();
+
+      // if (this.multiple == "NO") {
+      //    this.ValidarElementoSitieneOrden
+      // }
+      
+
+
+      // const actividadgis = this.selectedTipoActividad.CODIGO;
+      const actividadgis = parseFloat(this.selectedActividad.OSFTIPOTRABAJO);
+      const actividad = parseFloat(this.selectedActividad.COD_ACTIVIDAD_ODF);
+      const abservacion = String(this.observable);
+      const elemento = String(this.selectedValue);
+      const tags = String(this.selectedFeatures[0].attributes.TAG);
+      const departamento = parseFloat(this.selectedFeatures[0].attributes.DEPARTAMENTO);
+      const localidad = parseFloat(this.selectedFeatures[0].attributes.LOCALIDAD);
+      const guid = String(uuidv4());
+
+
+      // const layerId = parseFloat(this.capturedInformation[0].layerId);
+
 
       console.log('UN_GUID:', guid);
       console.log('una_actividad_gis:', actividadgis);
@@ -431,6 +487,14 @@ export class GenerarCorrectComponent implements OnInit {
       console.log('un_departamento:', departamento);
       console.log('una_localidad:', localidad);
 
+      let layerId = null;
+      if (this.capturarLayerId && !this.selectedFeatures[0].attributes.OBJECTID || this.capturedInformation.length > 0) {
+         layerId = String(this.capturedInformation[0].feature.attributes.OBJECTID);
+      }
+      console.log('un_addressid',layerId);
+      // this.insertOrderTag();
+
+
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.GenerarOrdenCorrectivo, [
@@ -439,6 +503,7 @@ export class GenerarCorrectComponent implements OnInit {
                new InputParameter('tags', tags),
                new InputParameter('un_elemento', elemento),
                new InputParameter('una_observacion', abservacion),
+               new InputParameter('un_producto', 0),
                new InputParameter('un_suscriptor', ''),
                new InputParameter('ionuorderid', ''),
                new InputParameter('onuerrorcode', ''),
@@ -446,23 +511,22 @@ export class GenerarCorrectComponent implements OnInit {
                new InputParameter('un_departamento', departamento),
                new InputParameter('una_localidad', localidad),
                new InputParameter('un_guid', guid),
-               new InputParameter('un_addressid', 0)
+               new InputParameter('un_addressid', layerId)
             ])
          )
          .subscribe(
             (response) => {
-               console.log('respuesta del procedimiento ', response);
-               if (response && response.length > 0) {
-                  const result = response[0];
-                  const errorCode = result['onuerrorcode'];
-                  const errorMessage = result.osbErrorMessage;
-
+               console.log('respuesta del servidor', response);
+               
+               if (response && response['onuerrorcode'] != null && response['osberrormessage'] != null) {
+                  const errorCode = response['onuerrorcode'];
+                  const errorMessage = response['osberrormessage'];
+   
                   if (errorCode === 0) {
-                     const ordenId = result.ionuorderid;
-                     if (ordenId != null) {
-                        alert(`Orden generada exitosamente. Número de orden: ${ordenId}`);
-                        this.insertOrderTag();
-                        this.closeFunction();
+                     const orderId = response['ionuorderid'];
+                     if (orderId != null) {
+                        alert(`Orden generada exitosamente. Número de orden: ${orderId}`);
+                        this.closeFunction(); 
                      } else {
                         alert('La orden no pudo ser generada correctamente.');
                      }
@@ -472,20 +536,15 @@ export class GenerarCorrectComponent implements OnInit {
                } else {
                   alert('Error en la respuesta del servidor');
                }
-               this.startProgress();
             },
             (error) => {
                console.error('Error al llamar al procedimiento:', error);
-               // Mostrar mensaje de error al usuario
                alert('Error al generar la orden. Por favor, inténtalo de nuevo.');
-               this.startProgress();
             }
          );
    }
 
-   // onSelectChange(event: any): void {
-   //    this.dataSharingService.setSelectChangeFunction(event);
-   // }
+   
    private insertOrderTag(): void {
       const guid = uuidv4().toString();
       const actividad = this.selectedActividad.COD_ACTIVIDAD_ODF;
@@ -515,7 +574,25 @@ export class GenerarCorrectComponent implements OnInit {
             }
          });
    }
+   private ValidarElementoSitieneOrden(): void{
+      const tag = this.selectedFeatures[0].attributes.TAG.toString();
+      const actividadgis = parseFloat(this.selectedActividad.CODIGO);
 
+      
+      this.apiService
+            .callStoreProcedureV2(
+               RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ValidarElementoSitieneOrden,[
+                  new InputParameter('un_tag', tag ),
+                  new InputParameter('una_actividad_gis', actividadgis ),
+                  new InputParameter('cuantos', 0 ),
+
+               ])
+            )
+            .subscribe((json) => {
+               console.log('respuesta del tag', json);
+               
+            })
+   }
    private textEdit1(): void {
       const tags = this.selectedFeatures[0].attributes.TAG.toString();
 
