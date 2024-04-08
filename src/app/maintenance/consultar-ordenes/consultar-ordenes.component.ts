@@ -71,6 +71,9 @@ export class ConsultarOrdenesComponent implements OnInit {
    fechaVaidarTF: boolean = false;
    showSpinner: boolean = false;
 
+   selectedStatus: string;
+
+
    // Variable para almacenar el número de orden buscado
    numeroOrdenBuscada: string;
 
@@ -110,9 +113,8 @@ export class ConsultarOrdenesComponent implements OnInit {
    buscarOrdenes(numeroOrden: string) {
       if (this.buscarOrden && this.numeroOrden) {
           this.showSpinner = true;
-  
           const params = [
-              new InputParameter('una_orden',this.numeroOrden),
+              new InputParameter('una_orden', this.numeroOrden)
           ];
   
           this.apiService
@@ -123,32 +125,17 @@ export class ConsultarOrdenesComponent implements OnInit {
                   )
               )
               .subscribe((response) => {
-                  if (response && response[0] && response[0].ErrorMessage) {
-                      const errorMessage = JSON.parse(response[0].ErrorMessage).split(':')[1];
-                      console.error('Error en el servidor:', errorMessage);
-                      alert('Se ha producido un error. Detalles: ' + errorMessage);
-                      this.showSpinner = false;
-                      return;
-                  }
-  
                   console.log('Respuesta del servidor:', response);
-                  const maxLength = 2000; // Tamaño máximo permitido
-for (let key in response) {
-    if (typeof response[key] === 'string' && response[key].length > maxLength) {
-        response[key] = response[key].substring(0, maxLength);
-    }
-}
-
   
                   // Validación y manejo del código de error
-                  if (this.codigoerror !== '0' && this.codigoerror !== '') {
-                     console.log('Se recibió un código de error diferente de 0:', this.codigoerror);
-                     alert('Se ha producido un error. Código de error: ' + this.codigoerror);
-                 
-                     this.showSpinner = false;
-                     return;
-                 }
-                 
+                  this.codigoerror = response[27];
+                  if (parseInt(this.codigoerror) !== 0) {
+                      console.log('Se recibió un código de error diferente de 0:', this.codigoerror);
+                      alert('Se ha producido un error. Código de error: ' + this.codigoerror);
+                     
+                      this.showSpinner = false;
+                      return; 
+                  }
   
                   // Asignaciones y operaciones solo si el código de error es '0'
                   this.fechagen = response[1];
@@ -160,9 +147,9 @@ for (let key in response) {
                   this.listap = response[10];
                   this.observacion = response[11];
                   this.estadolegal = response[12];
-                  this.tipomantenimiento = response[13];
+                  this.tipoOrdenCP = response[13];
                   this.tipotrabajo1 = response[14];
-                  this.tipotrabajo2 = response[15];
+                  this.sTasktype = response[15];
                   this.ordenpadre = response[16];
                   this.tipoelemento = response[17];
                   this.fechaasig = response[18];
@@ -174,8 +161,7 @@ for (let key in response) {
                   this.fechaLegal = response[24];
                   this.fechaIniEje = response[25];
                   this.fechaFinEje = response[26];
-                  this.descripcionerror = response[28];
-  
+                  
                   // Validar y asignar fechaLegal si es diferente de 'null'
                   this.fechaLegal = (this.fechaLegal !== 'null') ? this.fechaLegal : '';
   
@@ -211,8 +197,6 @@ for (let key in response) {
           alert('Debe proporcionar un número de orden válido.');
       }
   }
-  
-  
   
    Histocambioorden() {
       if (this.buscarOrden && this.numeroOrden) {
@@ -306,48 +290,73 @@ for (let key in response) {
             // this.getOrders();
          });
    }
-   getOrders() {
-      // console.log('Buscando tags...');
-      if (this.buscarTag && this.numeroOrden) {
-         this.showSpinner = true;
 
-         this.apiService
-            .callStoreProcedureV2(
+   legalizeOrderxtraForm(): void {
+      if (this.buscarTag) {
+          switch (this.selectedStatus) {
+              case "-99":
+                  // Lógica para traer todas las órdenes
+                  this.orderSelected = null; // Asignar null para indicar que se buscan todas las órdenes
+                  break;
+              case "0":
+              case "5":
+              case "8":
+                  // Acciones específicas para los estados "Registrada", "Asignada" y "Legalizada"
+                  this.orderSelected = this.selectedStatus;
+                  break;
+              default:
+                  // Acciones para otros estados
+                  break;
+          }
+  
+          // Llamar al método correspondiente para buscar las órdenes según el estado seleccionado
+          this.getOrdenInfo(this.orderSelected);
+      }
+  }
+  
+  getOrders() {
+   console.log('Buscando tags...');
+   if (this.buscarTag && this.numeroOrden) {
+       this.showSpinner = true;
+
+       console.log('numero de tag', this.numeroOrden);
+       console.log('estado', this.selectedStatus);
+
+
+       this.apiService
+           .callStoreProcedureV2(
                RequestHelper.getParamsForStoredProcedureV2(
-                  StoreProcedures.OrdenesMantenimientoConsulta,
-                  [
-                     new InputParameter('una_elemento', this.numeroOrden),
-                     new InputParameter('un_estadoC', this.buscarTag),
-                     new InputParameter('una_orden', this.numeroOrden),
-                     new InputParameter('un_Resultado', '')
-                  ]
+                   StoreProcedures.OrdenesMantenimientoConsulta,
+                   [
+                       new InputParameter('una_elemento', this.numeroOrden),
+                       new InputParameter('un_estadoC', this.selectedStatus),
+                       new InputParameter('un_Resultado', '')
+                   ]
                )
-            )
-            .subscribe((json) => {
-               // console.log('Respuesta del procedimiento almacenado:', json);
+           )
+           .subscribe((json) => {
+               console.log('Respuesta del procedimiento almacenado:', json);
                const orders = JSON.parse(json['2'])['Table1']; // Obtener las órdenes
                if (orders && orders.length > 0) {
-                  // Procesar las órdenes
-                  // console.log('Órdenes encontradas:', orders);
-                  this.loadResultadoOrdenesCompleted(orders);
+                   this.loadResultadoOrdenesCompleted(orders);
 
-                  // Pintar la información en el select
-                  this.resultOrders.forEach((order) => {
-                     const option = document.createElement('option');
-                     option.value = order.value;
-                     option.textContent = order.label;
-                     this.orderSelected.nativeElement.appendChild(option);
-                  });
+                   // Pintar la información en el select
+                   this.resultOrders.forEach((order) => {
+                       const option = document.createElement('option');
+                       option.value = order.value;
+                       option.textContent = order.label;
+                       this.orderSelected.nativeElement.appendChild(option);
+                   });
                } else {
-                  alert('No se encontraron órdenes.');
+                   alert('No se encontraron órdenes.');
                }
-         this.showSpinner = false;
-
-            });
-      } else {
-         console.log('La búsqueda de órdenes está desactivada.');
-      }
+               this.showSpinner = false;
+           });
+   } else {
+       console.log('La búsqueda de órdenes está desactivada.');
    }
+}
+
 
    loadResultadoOrdenesCompleted(orders: any[]) {
       // console.log('Cargando resultado de órdenes completado:', orders);

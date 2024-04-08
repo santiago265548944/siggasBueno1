@@ -21,13 +21,15 @@
          <label class="form-check-label" for="flexRadioDefault2"> Buscar TAG elemento </label>
       </div>
       <div class="row-0-col2">
-         <select aria-label="Estado Orden:" [disabled]="buscarOrden">
-            <option selected>Estado Orden:</option>
-            <option value="">Todas</option>
-            <option value="">Registrada</option>
-            <option value="">Asignada</option>
-            <option value="">Legalizada</option>
-         </select>
+         <select aria-label="Estado Orden:" [disabled]="buscarOrden" [(ngModel)]="selectedStatus">
+
+            <option value="-99">Todas</option>
+            <option value="0">Registrada</option>
+            <option value="5">Asignada</option>
+            <!-- <option value="7">Finalizada</option> -->
+            <option value="8">Legalizada</option>
+        </select>
+        
          <br />
          <input type="text" [(ngModel)]="numeroOrden" (change)="buscarDor()" />
          <span class="glyphicon glyphicon-search modify-span" (click)="buscarDor()"></span>
