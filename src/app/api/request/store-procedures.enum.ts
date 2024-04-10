@@ -61,7 +61,7 @@ export enum StoreProcedures {
    ObtenerUsuariosAfectados = 'REDES.UsuariosAfectados',
    ObtenerRecalcularUsuariosAfectados = 'REDES.RecalcularUsuariosAfectados',
    ObtenerListado = 'REDES.ObtenerListadoEmergencias',
-   ObtenerResultado = 'REDES.ObtieneResultadosEmergencias',
+   ObtenerResultado = 'REDES.ObtieneResultadosEmergencias', 
    ObtenerOperarios = 'REDES.ObtenerOperarios',
    ObtenerTuberiasPrensado = 'REDES.ObtenerTuberiasPrensado',
    spTraceAll = 'PKEMERGENCY.spTraceAll',

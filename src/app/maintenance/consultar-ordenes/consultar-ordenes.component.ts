@@ -9,6 +9,8 @@ import { RequestHelper } from '../../api/request/request-helper';
 import { InputParameter } from '../../api/request/input-parameter';
 import * as moment from 'moment';
 import { GlobalService } from '../../Globals/global.service';
+import { timeout } from 'rxjs/operators';
+
 
 
 @Component({
@@ -259,8 +261,8 @@ export class ConsultarOrdenesComponent implements OnInit {
    // console.log('Fecha inicial:', this.fechaIniEje);
    // console.log('Fecha final:', this.fechaFinEje);
       if (this.fechaIniEje != '01-JAN-00' && this.fechaFinEje != '01-JAN-00') {
-         const fechaEquipo = moment(this.fechaIniEje).format('YYYY-MM-DD');
-         const fechaEquipo1 = moment(this.fechaFinEje).format('YYYY-MM-DD');
+         const fechaEquipo = moment(this.fechaIniEje, "MM/DD/YYYY HH:mm:ss").format("MM/DD/YYYY HH:mm:ss");
+         const fechaEquipo1 = moment(this.fechaFinEje,"MM/DD/YYYY HH:mm:ss").format("MM/DD/YYYY HH:mm:ss");
 
          this.fechaInicio = fechaEquipo;
          this.fechaFin = fechaEquipo1;
@@ -498,6 +500,8 @@ export class ConsultarOrdenesComponent implements OnInit {
    }
 
    getCorrItems(tipoCP: any) {
+      this.showSpinner = true;
+
       let buscaNumeroOrden = this.buscarOrden ? this.numeroOrden : this.orderSelected;
 
       this.apiService
@@ -509,7 +513,7 @@ export class ConsultarOrdenesComponent implements OnInit {
             ])
          )
          .subscribe((json) => {
-            // console.log('respuesta del servidor Items', json);
+            console.log('respuesta del servidor Items', json);
 
             if (json && json[2]) {
                try {
@@ -521,6 +525,8 @@ export class ConsultarOrdenesComponent implements OnInit {
             } else {
                console.error('Respuesta del servidor vacía o no válida:', json);
             }
+      this.showSpinner = true;
+
          });
    }
 
@@ -533,30 +539,45 @@ export class ConsultarOrdenesComponent implements OnInit {
    }
 
    getPrevItems(preStak: any) {
+      this.showSpinner = true;
+
       let buscaNumeroOrden = this.buscarOrden ? this.numeroOrden : this.orderSelected;
-
+  
       this.apiService
-         .callStoreProcedureV2(
-            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerItemsPreventivo, [
-               new InputParameter('una_orden', buscaNumeroOrden),
-               new InputParameter('un_tipotrabajo', preStak)
-            ])
-         )
-         .subscribe((json) => {
-            // console.log('respuesta del servidor PrevItems', json);
+          .callStoreProcedureV2(
+              RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerItemsPreventivo, [
+                  new InputParameter('una_orden', buscaNumeroOrden),
+                  new InputParameter('un_tipotrabajo', preStak)
+              ])
+          )
+          .pipe(
+              timeout(200000) // Tiempo de espera en milisegundos (10 segundos en este ejemplo)
+          )
+          .subscribe(
+              (json) => {
+                  console.log('respuesta del servidor PrevItems', json);
+  
+                  if (json && json[2]) {
+                      try {
+                          const jsonResponse = JSON.parse(json[2]);
+                          this.getPrevItemsCompleted(jsonResponse);
+                      } catch (error) {
+                          console.error('Error al parsear JSON:', error);
+                      }
+                  } else {
+                      console.error('Respuesta del servidor vacía o no válida:', json);
+                  }
+      this.showSpinner = false;
 
-            if (json && json[2]) {
-               try {
-                  const jsonResponse = JSON.parse(json[2]);
-                  this.getPrevItemsCompleted(jsonResponse);
-               } catch (error) {
-                  console.error('Error al parsear JSON:', error);
-               }
-            } else {
-               console.error('Respuesta del servidor vacía o no válida:', json);
-            }
-         });
-   }
+              },
+              (error) => {
+                  console.error('Error de tiempo de espera:', error);
+                  // Puedes mostrar un mensaje de error al usuario
+                  alert('La solicitud ha excedido el tiempo límite. Intente nuevamente más tarde.');
+              }
+              
+          );
+  }
 
    getPrevItemsCompleted(jsonPrevItems: any) {
       if (jsonPrevItems && jsonPrevItems.Table1) {

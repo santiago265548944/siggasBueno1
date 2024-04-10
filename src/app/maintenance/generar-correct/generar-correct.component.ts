@@ -104,7 +104,8 @@ export class GenerarCorrectComponent implements OnInit {
             this.setUser();
             this.getActivityTypes();
             this.getCorrectiveTags();
-            this.getSystemInfo();
+
+            // this.getSystemInfo();
             
             // this.textEdit1();
 
@@ -141,11 +142,13 @@ export class GenerarCorrectComponent implements OnInit {
          // Recibir y asignar el valor del select
          if (value.toString() === '46') {
             this.selectedValue = 'TUBERIAP80';
-
+         } else if (value.toString() === '29') {
+            this.selectedValue = 'VALVULA';
          } else {
             this.selectedValue = value;
          }
          console.log('este es el value ', this.selectedValue);
+
       });
 
       // Suscribirse al observable del servicio IdentidaPredioService
@@ -204,7 +207,7 @@ export class GenerarCorrectComponent implements OnInit {
    }
    private setUser() {
       this.user = this.memoryService.getItem('currentUser');
-      console.log(this.user);
+      // console.log(this.user);
       this.apiService
          .callStoreProcedureV2(
             RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.ObtenerPerfilUsuario, [
@@ -214,6 +217,7 @@ export class GenerarCorrectComponent implements OnInit {
          .subscribe((json) => {
             this.perfil = JSON.parse(json['1']);
          });
+
    }
 
    private getActivityTypes(): void {
@@ -268,61 +272,16 @@ export class GenerarCorrectComponent implements OnInit {
          this.activity = json['Table1'];
       }
    }
-
-   getSystemInfo(): void {
-      const osName = this.getOperatingSystem();
-      const browserName = this.getBrowserName();
   
-      // console.log('Nombre del sistema operativo:', osName + browserName);
-      // console.log('Nombre del navegador:', browserName);
-  }
-  
-  getOperatingSystem(): string {
-      const userAgent = window.navigator.userAgent;
-      let osName = 'Desconocido';
-  
-      if (userAgent.indexOf('Win') !== -1) {
-          osName = 'Windows';
-      } else if (userAgent.indexOf('Mac') !== -1) {
-          osName = 'MacOS';
-      } else if (userAgent.indexOf('X11') !== -1) {
-          osName = 'UNIX';
-      } else if (userAgent.indexOf('Linux') !== -1) {
-          osName = 'Linux';
-      }
-  
-      return osName;
-  }
-  
-  getBrowserName(): string {
-      const userAgent = window.navigator.userAgent;
-      let browserName = 'Desconocido';
-  
-      if (userAgent.indexOf('Firefox') !== -1) {
-          browserName = 'Firefox';
-      } else if (userAgent.indexOf('Edg') !== -1) {
-          browserName = 'Edge';
-      } else if (userAgent.indexOf('Chrome') !== -1) {
-          browserName = 'Chrome';
-      } else if (userAgent.indexOf('Safari') !== -1) {
-          browserName = 'Safari';
-      } else if (userAgent.indexOf('MSIE') !== -1 || userAgent.indexOf('Trident/') !== -1) {
-          browserName = 'Internet Explorer';
-      }
-  
-      return browserName;
-  }
-  
-
    private getCorrectiveTags():void{
    
-      const elemento = String(this.selectedValue);
-      const user = this.memoryService.getItem('currentUser');
-      const osName = this.getOperatingSystem() + this.getBrowserName();
+      const elemento = String(this.selectedValue).toUpperCase();
+      const user = this.memoryService.getItem('currentUser').toUpperCase();
+      const osName = 'SIGGASWEB';
       
-      console.log("Nombre del sistema operativo: " + osName);
-      console.log('elemento getcorrective', elemento);
-      console.log('usuario selecionado', user);
+      console.log( elemento);
+      console.log( user);
+      console.log( osName);
       
          this.apiService
             .callStoreProcedureV2
@@ -458,15 +417,15 @@ export class GenerarCorrectComponent implements OnInit {
       }
       // this.ValidarElementoSitieneOrden();
 
-      // if (this.multiple == "NO") {
-      //    this.ValidarElementoSitieneOrden
-      // }
+      if (!this.ValidarElementoSitieneOrden) {
+         return
+      }
       
 
 
       // const actividadgis = this.selectedTipoActividad.CODIGO;
-      const actividadgis = parseFloat(this.selectedActividad.OSFTIPOTRABAJO);
-      const actividad = parseFloat(this.selectedActividad.COD_ACTIVIDAD_ODF);
+      const actividadgis = parseFloat(this.selectedActividad.CODIGO);
+      const actividad = parseFloat(this.selectedActividad.CODIGO);
       const abservacion = String(this.observable);
       const elemento = String(this.selectedValue);
       const tags = String(this.selectedFeatures[0].attributes.TAG);
@@ -592,19 +551,5 @@ export class GenerarCorrectComponent implements OnInit {
                console.log('respuesta del tag', json);
                
             })
-   }
-   private textEdit1(): void {
-      const tags = this.selectedFeatures[0].attributes.TAG.toString();
-
-      this.apiService
-         .callStoreProcedureV2(
-            RequestHelper.getParamsForStoredProcedureV2(StoreProcedures.seleccionarIDaddres, [
-               new InputParameter('un_tag', tags)
-            ])
-         )
-         .subscribe((json) => {
-            console.log('textedit', json);
-            alert(json[2]);
-         });
    }
 }
