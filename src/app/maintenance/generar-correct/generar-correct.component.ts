@@ -15,7 +15,7 @@ import { StoreProcedures } from "../../api/request/store-procedures.enum";
 import { ApiService } from "../../api/api.service";
 import { MemoryService } from "../../cache/memory.service";
 import { DataSharingService } from "../../service/data-sharing.service";
-import { IdentidaPredioService } from "../../service/IdentidaPredio.service";
+// import { IdentidaPredioService } from "../../service/IdentidaPredio.service";
 import { jqxTabsComponent } from "jqwidgets-scripts/jqwidgets-ts/angular_jqxtabs";
 import { InputParameter } from "../../api/request/input-parameter";
 import { v4 as uuidv4 } from "uuid";
@@ -73,8 +73,7 @@ export class GenerarCorrectComponent implements OnInit {
   constructor(
     private apiService: ApiService,
     private memoryService: MemoryService,
-    private dataSharingService: DataSharingService,
-    private identidaPredioService: IdentidaPredioService
+    private dataSharingService: DataSharingService
   ) {}
 
   ngOnInit() {
@@ -109,8 +108,7 @@ export class GenerarCorrectComponent implements OnInit {
           this.setUser();
           this.getActivityTypes();
           this.getCorrectiveTags();
-
-          // this.getSystemInfo();
+          this.seleccionaridAddres();
 
           // this.textEdit1();
 
@@ -172,14 +170,6 @@ export class GenerarCorrectComponent implements OnInit {
           break;
       }
       console.log("este es el value ", this.selectedValue);
-    });
-
-    // Suscribirse al observable del servicio IdentidaPredioService
-    this.identidaPredioService.identifyResults$.subscribe((results) => {
-      this.capturedInformation = results;
-
-      // Puedes realizar cualquier acción adicional con la información capturada aquí
-      this.procesarInformacionCapturada();
     });
   }
 
@@ -585,12 +575,31 @@ export class GenerarCorrectComponent implements OnInit {
           [
             new InputParameter("un_tag", tag),
             new InputParameter("una_actividad_gis", actividadgis),
-            new InputParameter("cuantos", 0),
+            // new InputParameter("cuantos", 0),
           ]
         )
       )
       .subscribe((json) => {
         console.log("respuesta del tag", json);
+      });
+  }
+
+  private seleccionaridAddres(): void {
+    const tag = this.selectedFeatures[0].attributes.TAG.toString();
+
+    this.apiService
+      .callStoreProcedureV2(
+        RequestHelper.getParamsForStoredProcedureV2(
+          StoreProcedures.seleccionarIDaddres,
+          [new InputParameter("un_id", tag)]
+        )
+      )
+      .subscribe((json) => {
+        console.log("respuesta IDAddres", json);
+
+        if (json["1"] === "-1" && json["2"] === "SELECCIONE OTRO POLIGONO") {
+          alert("SELECCIONE OTRO POLIGONO");
+        }
       });
   }
 }
