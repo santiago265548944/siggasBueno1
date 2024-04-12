@@ -145,12 +145,31 @@ export class GenerarCorrectComponent implements OnInit {
 
       this.selectedId = value.toString();
       // Recibir y asignar el valor del select
-      if (value.toString() === "46") {
-        this.selectedValue = "TUBERIAP80";
-      } else if (value.toString() === "29") {
-        this.selectedValue = "VALVULA";
-      } else {
-        this.selectedValue = value;
+      switch (value.toString()) {
+        case "28":
+          this.selectedValue = "Reduccion";
+          break;
+        case "29":
+          this.selectedValue = "Valvula";
+          break;
+        case "30":
+          this.selectedValue = "Silleta";
+          break;
+        case "31":
+          this.selectedValue = "Tapon";
+          break;
+        case "40":
+          this.selectedValue = "Prensa";
+          break;
+        case "43":
+          this.selectedValue = "TuberiaP100";
+          break;
+        case "46":
+          this.selectedValue = "TuberiaP80";
+          break;
+        default:
+          this.selectedValue = value;
+          break;
       }
       console.log("este es el value ", this.selectedValue);
     });
@@ -438,7 +457,7 @@ export class GenerarCorrectComponent implements OnInit {
 
     // const actividadgis = this.selectedTipoActividad.CODIGO;
     const actividadgis = parseFloat(this.selectedActividad.CODIGO);
-    const actividad = parseFloat(this.selectedActividad.CODIGO);
+    const actividad = parseFloat(this.selectedActividad.COD_ACTIVIDAD_ODF);
     const abservacion = String(this.observable);
     const elemento = String(this.selectedValue);
     const tags = String(this.selectedFeatures[0].attributes.TAG);
@@ -479,11 +498,7 @@ export class GenerarCorrectComponent implements OnInit {
             new InputParameter("tags", tags),
             new InputParameter("un_elemento", elemento),
             new InputParameter("una_observacion", abservacion),
-            new InputParameter("un_producto", 0),
-            new InputParameter("un_suscriptor", ""),
-            new InputParameter("ionuorderid", ""),
-            new InputParameter("onuerrorcode", ""),
-            new InputParameter("osberrormessage", ""),
+            // new InputParameter("un_producto", 0),
             new InputParameter("un_departamento", departamento),
             new InputParameter("una_localidad", localidad),
             new InputParameter("un_guid", guid),
