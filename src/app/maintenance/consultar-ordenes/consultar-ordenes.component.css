@@ -1,178 +1,175 @@
 .cuadro0 {
-   border: 1px solid black;
+  border: 1px solid black;
 }
 .button-container {
-   position: absolute;
-   right: 19%;
-   top: 13%;
+  position: absolute;
+  right: 19%;
+  top: 13%;
 }
 
 .cuadro_radios {
-   padding: 5px;
-   box-sizing: border-box;
-   display: flex;
-   align-items: center;
+  padding: 5px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 .row-0-col1 {
-   display: block;
-   width: 25%;
-   margin-right: 5px;
-   border: 2px solid black;
+  display: block;
+  width: 25%;
+  margin-right: 5px;
+  border: 2px solid black;
 }
 .row-0-col2 {
-   width: 50%;
-   margin-left: 5px;
+  width: 50%;
+  margin-left: 5px;
 }
 .form-check-label {
-   font-size: 10px;
+  font-size: 10px;
 }
 .row-1 {
-   padding: 5px;
-   box-sizing: border-box;
-   display: flex;
-   align-items: center;
+  padding: 5px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
 .row-1-col1 {
-   width: 50%;
-   margin-right: 5px;
+  width: 50%;
+  margin-right: 5px;
 }
 
 .row-1-col2 {
-   width: 50%;
-   margin-left: 5px;
+  width: 50%;
+  margin-left: 5px;
 }
 
 .row1-label {
-   width: 50%;
+  width: 50%;
 }
 
 .row1-select {
-   width: 43%;
+  width: 43%;
 }
 
 .row-1 span {
-   cursor: pointer;
+  cursor: pointer;
 }
 
 .row1-input {
-   width: 48%;
+  width: 48%;
 }
 .glyphicon {
-   cursor: pointer;
+  cursor: pointer;
 }
 .Preventivo {
-   padding: 5px;
-   box-sizing: border-box;
-   display: flex;
-   align-items: center;
+  padding: 5px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 /*Estilos de la tabla 0*/
 .cuadro1 {
-   border: 1px solid black;
+  border: 1px solid black;
 }
 .tabla0 {
-   width: 50%;
-   margin-right: 5px;
+  width: 50%;
+  margin-right: 5px;
 }
 .tabla {
-   display: table;
-   width: 100%;
-   border-collapse: collapse;
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .fila {
-   display: table-row;
+  display: table-row;
 }
 
 .celda {
-   display: table-cell;
-   border: 1px solid #ccc;
-   padding: 8px;
-   align-items: center;
+  display: table-cell;
+  border: 1px solid #ccc;
+  padding: 8px;
+  align-items: center;
 }
 
 .tabla0-1 {
-   display: table;
-   width: 100%;
-   border-collapse: collapse;
-   border: 1px solid black;
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid black;
 }
 .Correctivo {
-   padding: 5px;
-   box-sizing: border-box;
-   display: flex;
-   align-items: center;
+  padding: 5px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 /* Estilos de la tabla 1 */
 .cuadro2 {
-   border: 1px solid black;
+  border: 1px solid black;
 }
 .tabla1 {
-   width: 50%;
-   margin-right: 5px;
+  width: 50%;
+  margin-right: 5px;
 }
 .tabla {
-   display: table;
-   width: 100%;
-   border-collapse: collapse;
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .fila {
-   display: table-row;
+  display: table-row;
 }
 
 .celda {
-   display: table-cell;
-   border: 1px solid #ccc;
-   padding: 8px;
-   align-items: center;
+  display: table-cell;
+  border: 1px solid #ccc;
+  padding: 8px;
+  align-items: center;
 }
 
 /* Estilos de la tabla 2 */
 .tabla2 {
-   width: 50%;
-   margin-left: 5px;
+  width: 50%;
+  margin-left: 5px;
 }
 .tabla {
-   display: table;
-   width: 100%;
-   border-collapse: collapse;
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .fila {
-   display: table-row;
+  display: table-row;
 }
 
 .celda {
-   display: table-cell;
-   border: 1px solid #ccc;
-   padding: 8px;
-   align-items: center;
+  display: table-cell;
+  border: 1px solid #ccc;
+  padding: 8px;
+  align-items: center;
 }
 
-
 .spinner {
-   position: absolute;
-   top: 50%;
-   left: 50%;
-   transform: translate(-50%, -50%);
-   /* Estilos del spinner, por ejemplo: */
-   width: 50px;
-   height: 50px;
-   border: 3px solid rgba(0, 0, 0, 0.1);
-   border-top-color: #3498db;
-   border-radius: 50%;
-   animation: spin 1s ease-in-out infinite;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* Estilos del spinner, por ejemplo: */
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #3498db;
+  border-radius: 50%;
+  animation: spin 1s ease-in-out infinite;
 }
 
 @keyframes spin {
-   0% {
-      transform: rotate(0deg);
-   }
-   100% {
-      transform: rotate(360deg);
-   }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
-
- 
