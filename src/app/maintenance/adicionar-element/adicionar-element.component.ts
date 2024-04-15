@@ -97,25 +97,25 @@ export class AdicionarElementComponent implements OnInit {
       // Recibir y asignar el valor del select
       switch (value.toString()) {
         case "28":
-          this.selectedValue = "Reduccion";
+          this.selectedValue = "REDUCCION";
           break;
         case "29":
-          this.selectedValue = "Valvula";
+          this.selectedValue = "VALVULAR";
           break;
         case "30":
-          this.selectedValue = "Silleta";
+          this.selectedValue = "SILLETA";
           break;
         case "31":
-          this.selectedValue = "Tapon";
+          this.selectedValue = "TAPON";
           break;
         case "40":
-          this.selectedValue = "Prensa";
+          this.selectedValue = "PRENSA";
           break;
         case "43":
-          this.selectedValue = "TuberiaP100";
+          this.selectedValue = "TUBERIAP100";
           break;
         case "46":
-          this.selectedValue = "TuberiaP80";
+          this.selectedValue = "TUBERIAP80";
           break;
         default:
           this.selectedValue = value;

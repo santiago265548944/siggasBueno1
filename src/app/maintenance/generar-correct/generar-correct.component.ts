@@ -7,7 +7,7 @@ import {
   Output,
   ViewChild,
 } from "@angular/core";
-import { Subscription } from "rxjs";
+import { Observable, Subscription } from "rxjs";
 import { jqxLoaderComponent } from "jqwidgets-scripts/jqwidgets-ts/angular_jqxloader";
 import { jqxDataTableComponent } from "jqwidgets-scripts/jqwidgets-ts/angular_jqxdatatable";
 import { RequestHelper } from "../../api/request/request-helper";
@@ -19,6 +19,7 @@ import { IdentidaPredioService } from "../../service/IdentidaPredio.service";
 import { jqxTabsComponent } from "jqwidgets-scripts/jqwidgets-ts/angular_jqxtabs";
 import { InputParameter } from "../../api/request/input-parameter";
 import { v4 as uuidv4 } from "uuid";
+import { result } from "underscore";
 
 @Component({
   selector: "app-generar-correct",
@@ -94,11 +95,13 @@ export class GenerarCorrectComponent implements OnInit {
           const tag = firstFeature.attributes.TAG;
           const departamento = firstFeature.attributes.DEPARTAMENTO;
           const localidad = firstFeature.attributes.LOCALIDAD;
+          const uuid = firstFeature.attributes.GLOBALID;
 
           // Hacer algo con estos valores, si es necesario
-          console.log("TAG:", tag);
-          console.log("DEPARTAMENTO:", departamento);
-          console.log("LOCALIDAD:", localidad);
+          // console.log("TAG:", tag);
+          // console.log("DEPARTAMENTO:", departamento);
+          // console.log("LOCALIDAD:", localidad);
+          // console.log("uuid", uuid);
 
           // Guardar los features para su uso posterior si es necesario
           this.selectedFeatures = features;
@@ -108,7 +111,7 @@ export class GenerarCorrectComponent implements OnInit {
 
           this.setUser();
           this.getActivityTypes();
-          this.getCorrectiveTags();
+          // this.getCorrectiveTags();
 
           // this.getSystemInfo();
 
@@ -147,25 +150,25 @@ export class GenerarCorrectComponent implements OnInit {
       // Recibir y asignar el valor del select
       switch (value.toString()) {
         case "28":
-          this.selectedValue = "Reduccion";
+          this.selectedValue = "REDUCCION";
           break;
         case "29":
-          this.selectedValue = "Valvula";
+          this.selectedValue = "VALVULAR";
           break;
         case "30":
-          this.selectedValue = "Silleta";
+          this.selectedValue = "SILLETA";
           break;
         case "31":
-          this.selectedValue = "Tapon";
+          this.selectedValue = "TAPON";
           break;
         case "40":
-          this.selectedValue = "Prensa";
+          this.selectedValue = "PRENSA";
           break;
         case "43":
-          this.selectedValue = "TuberiaP100";
+          this.selectedValue = "TUBERIAP100";
           break;
         case "46":
-          this.selectedValue = "TuberiaP80";
+          this.selectedValue = "TUBERIAP80";
           break;
         default:
           this.selectedValue = value;
@@ -449,148 +452,184 @@ export class GenerarCorrectComponent implements OnInit {
       );
       return;
     }
-    // this.ValidarElementoSitieneOrden();
 
-    if (!this.ValidarElementoSitieneOrden) {
-      return;
-    }
-
-    // const actividadgis = this.selectedTipoActividad.CODIGO;
     const actividadgis = parseFloat(this.selectedActividad.CODIGO);
+    const tag = String(this.selectedFeatures[0].attributes.TAG);
     const actividad = parseFloat(this.selectedActividad.COD_ACTIVIDAD_ODF);
     const abservacion = String(this.observable);
     const elemento = String(this.selectedValue);
-    const tags = String(this.selectedFeatures[0].attributes.TAG);
     const departamento = parseFloat(
       this.selectedFeatures[0].attributes.DEPARTAMENTO
     );
     const localidad = parseFloat(this.selectedFeatures[0].attributes.LOCALIDAD);
-    const guid = String(uuidv4());
+    const uuid = String(uuidv4());
 
-    // const layerId = parseFloat(this.capturedInformation[0].layerId);
+    this.ValidarElementoSitieneOrden(tag, actividadgis).subscribe((json) => {
+      console.log("respuesta del tag", json);
+      if (!json || json.cantidadOrdenes > 0) {
+        alert("El elemento tiene una orden en estado diferente a 8 pendiente.");
+        return;
+      }
 
-    console.log("UN_GUID:", guid);
-    console.log("una_actividad_gis:", actividadgis);
-    console.log("una_actividad:", actividad);
-    console.log("tags:", tags);
-    console.log("un_elemento:", elemento);
-    console.log("una_observacion:", abservacion);
-    console.log("un_departamento:", departamento);
-    console.log("una_localidad:", localidad);
+      let layerId = null;
+      if (
+        (this.capturarLayerId &&
+          !this.selectedFeatures[0].attributes.OBJECTID) ||
+        this.capturedInformation.length > 0
+      ) {
+        layerId = String(
+          this.capturedInformation[0].feature.attributes.OBJECTID
+        );
+      }
 
-    let layerId = null;
-    if (
-      (this.capturarLayerId && !this.selectedFeatures[0].attributes.OBJECTID) ||
-      this.capturedInformation.length > 0
-    ) {
-      layerId = String(this.capturedInformation[0].feature.attributes.OBJECTID);
-    }
-    console.log("un_addressid", layerId);
-    // this.insertOrderTag();
+      // console.log("UN_GUID:", uuid);
+      // console.log("una_actividad_gis:", actividadgis);
+      // console.log("una_actividad:", actividad);
+      // console.log("tags:", tag);
+      // console.log("un_elemento:", elemento);
+      // console.log("una_observacion:", abservacion);
+      // console.log("un_departamento:", departamento);
+      // console.log("una_localidad:", localidad);
+      // console.log("un_addressid", layerId);
 
-    this.apiService
-      .callStoreProcedureV2(
-        RequestHelper.getParamsForStoredProcedureV2(
-          StoreProcedures.GenerarOrdenCorrectivo,
-          [
-            new InputParameter("una_Actividad_gis", actividadgis),
-            new InputParameter("una_Actividad", actividad),
-            new InputParameter("tags", tags),
-            new InputParameter("un_elemento", elemento),
-            new InputParameter("una_observacion", abservacion),
-            // new InputParameter("un_producto", 0),
-            new InputParameter("un_departamento", departamento),
-            new InputParameter("una_localidad", localidad),
-            new InputParameter("un_guid", guid),
-            new InputParameter("un_addressid", layerId),
-          ]
-        )
-      )
-      .subscribe(
-        (response) => {
-          console.log("respuesta del servidor", response);
+      this.insertOrderTag(
+        uuid,
+        tag,
+        elemento,
+        this.selectedId,
+        departamento,
+        localidad,
+        actividadgis
+      ).subscribe((result) => {
+        console.log("respuesta insert", result);
 
-          if (
-            response &&
-            response["onuerrorcode"] != null &&
-            response["osberrormessage"] != null
-          ) {
-            const errorCode = response["onuerrorcode"];
-            const errorMessage = response["osberrormessage"];
+        this.apiService
+          .callStoreProcedureV2(
+            RequestHelper.getParamsForStoredProcedureV2(
+              StoreProcedures.GenerarOrdenCorrectivo,
+              [
+                new InputParameter("una_Actividad_gis", actividadgis),
+                new InputParameter("una_Actividad", actividad),
+                new InputParameter("tags", tag),
+                new InputParameter("un_elemento", elemento),
+                new InputParameter("una_observacion", abservacion),
+                new InputParameter("un_departamento", departamento),
+                new InputParameter("una_localidad", localidad),
+                new InputParameter("un_guid", uuid),
+                new InputParameter("un_addressid", layerId),
+              ]
+            )
+          )
+          .subscribe(
+            (response) => {
+              // console.log("respuesta del servidor", response);
 
-            if (errorCode === 0) {
-              const orderId = response["ionuorderid"];
-              if (orderId != null) {
+              if (!response || !response["7"]) {
+                alert("Error en la respuesta del servidor");
+                return;
+              }
+
+              const orderId = parseInt(response["7"]);
+              if (!isNaN(orderId)) {
                 alert(
                   `Orden generada exitosamente. Número de orden: ${orderId}`
                 );
                 this.closeFunction();
+                this.selectedActividad = null;
+                this.selectedActividadOSF = null;
+                this.selectedTipoActividad = null;
+                this.observacion = "";
+                this.observable = "";
+                this.selectedFeatures = [];
+                this.capturedInformation = [];
               } else {
                 alert("La orden no pudo ser generada correctamente.");
               }
-            } else {
-              alert(`Error generando la orden: ${errorMessage}`);
+            },
+            (error) => {
+              console.error("Error al llamar al procedimiento:", error);
+              alert(
+                "Error al generar la orden. Por favor, inténtalo de nuevo."
+              );
             }
-          } else {
-            alert("Error en la respuesta del servidor");
-          }
-        },
-        (error) => {
-          console.error("Error al llamar al procedimiento:", error);
-          alert("Error al generar la orden. Por favor, inténtalo de nuevo.");
+          );
+      });
+    });
+  }
+
+  validarElemento(index: number) {
+    if (this.selectedFeatures[index]) {
+      const tag = this.selectedFeatures[index].attributes.TAG.toString();
+      const actividadgis = parseFloat(this.selectedActividad.CODIGO);
+
+      this.ValidarElementoSitieneOrden(tag, actividadgis).subscribe(
+        (result) => {
+          // Aquí puedes manejar la respuesta de la validación
+          console.log(result);
+
+          const uuid = String(uuidv4());
+          const elemento = String(this.selectedValue);
+          const subtipo = this.selectedId;
+          const departamento = parseFloat(
+            this.selectedFeatures[index].attributes.DEPARTAMENTO
+          );
+          const localidad = parseFloat(
+            this.selectedFeatures[index].attributes.LOCALIDAD
+          );
+
+          this.insertOrderTag(
+            uuid,
+            tag,
+            elemento,
+            subtipo,
+            departamento,
+            localidad,
+            actividadgis
+          ).subscribe((result) => {
+            console.log("respuesta insert", result);
+          });
         }
       );
+    }
   }
 
-  private insertOrderTag(): void {
-    const guid = uuidv4().toString();
-    const actividad = this.selectedActividad.COD_ACTIVIDAD_ODF;
-    const elemento = this.selectedValue;
-    const subtipo = this.selectedValue.suptipoelemento;
-    const tag = this.selectedFeatures[0].attributes.TAG.toString();
-    const departamento = this.departamento;
-    const localidad = this.selectedFeatures[0].attributes.LOCALIDAD;
-
-    this.apiService
-      .callStoreProcedureV2(
-        RequestHelper.getParamsForStoredProcedureV2(
-          StoreProcedures.LOGInsertarOrdenTag,
-          [
-            new InputParameter("uudi", guid),
-            new InputParameter("un_tag", tag),
-            new InputParameter("un_elemento", elemento),
-            new InputParameter("un_subtipo", subtipo),
-            new InputParameter("un_departamento", departamento),
-            new InputParameter("una_localidad", localidad),
-            new InputParameter("una_actividadgis", actividad),
-          ]
-        )
+  private insertOrderTag(
+    guid: string,
+    tag: string,
+    elemento: string,
+    subtipo: string,
+    departamento: number,
+    localidad: number,
+    actividadgis: number
+  ): Observable<any> {
+    return this.apiService.callStoreProcedureV2(
+      RequestHelper.getParamsForStoredProcedureV2(
+        StoreProcedures.LOGInsertarOrdenTag,
+        [
+          new InputParameter("uudi", guid),
+          new InputParameter("un_tag", tag),
+          new InputParameter("un_elemento", elemento),
+          new InputParameter("un_subtipo", subtipo),
+          new InputParameter("un_departamento", departamento),
+          new InputParameter("una_localidad", localidad),
+          new InputParameter("una_actividadgis", actividadgis),
+        ]
       )
-      .subscribe((json) => {
-        console.log(" insertaordertag", json);
-
-        if (json[1] != null) {
-          // Aquí puedes realizar alguna acción adicional si lo necesitas
-        }
-      });
+    );
   }
-  private ValidarElementoSitieneOrden(): void {
-    const tag = this.selectedFeatures[0].attributes.TAG.toString();
-    const actividadgis = parseFloat(this.selectedActividad.CODIGO);
 
-    this.apiService
-      .callStoreProcedureV2(
-        RequestHelper.getParamsForStoredProcedureV2(
-          StoreProcedures.ValidarElementoSitieneOrden,
-          [
-            new InputParameter("un_tag", tag),
-            new InputParameter("una_actividad_gis", actividadgis),
-            new InputParameter("cuantos", 0),
-          ]
-        )
+  private ValidarElementoSitieneOrden(
+    tag: string,
+    actividadgis: number
+  ): Observable<any> {
+    return this.apiService.callStoreProcedureV2(
+      RequestHelper.getParamsForStoredProcedureV2(
+        StoreProcedures.ValidarElementoSitieneOrden,
+        [
+          new InputParameter("un_tag", tag),
+          new InputParameter("una_actividad_gis", actividadgis),
+        ]
       )
-      .subscribe((json) => {
-        console.log("respuesta del tag", json);
-      });
+    );
   }
 }

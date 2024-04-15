@@ -145,8 +145,10 @@
         <div class="celda">Departamento</div>
         <div class="celda">Localidad</div>
       </div>
-      <div class="fila" *ngFor="let feature of selectedFeatures">
-        <div class="celda"><input type="checkbox" /></div>
+      <div class="fila" *ngFor="let feature of selectedFeatures; let i = index">
+        <div class="celda">
+          <input type="checkbox" (change)="validarElemento(i)" />
+        </div>
         <div class="celda">{{ selectedValue }}</div>
         <div class="celda">{{ feature ? feature.attributes.TAG : "" }}</div>
         <div class="celda">{{ departamento }}</div>
